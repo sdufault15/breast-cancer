@@ -16,6 +16,9 @@ This repository adopted/modified the formatting used by the `ProjectTemplate` pa
 + **munge** code used for cleaning data and preparing it for analysis
 
 + **docs** contains pdf/html versions of the reports generated in **reports**.
-    + `2020-02-05_inclusion-exclusion-sample-size.html` contains sample size information and Table 1.
+    + `2020-02-05_inclusion-exclusion-sample-size.html` contains sample size information and *Table 1. Characteristics of Study Participants by HDP Status*
+    + `2019-10-07_table-genotype-interaction.pdf` contains the estimated values for *Table 2. Association of IGF1R SNP rs2016347 Genotype With Study Outcomes*
+
++ **reports** contains the raw code to generate the tables, figures and documents in **docs**
 
 + **data** contact the [UKBiobank](https://www.ukbiobank.ac.uk) with any data requests
