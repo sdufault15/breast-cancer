@@ -1,0 +1,742 @@
+\documentclass{article}
+\usepackage{booktabs}
+\usepackage{threeparttable}
+\usepackage[margin = 0.75in]{geometry}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{wrapfig}
+\usepackage{float}
+\usepackage{colortbl}
+\usepackage{pdflscape}
+
+\begin{document}
+
+<<setup, echo=FALSE>>=
+knitr::opts_chunk$set(echo = TRUE, 
+                      message = FALSE,
+                      warning = FALSE)
+@
+
+<<echo = FALSE>>=
+library(knitr)
+library(kableExtra)
+library(lmtest)
+
+library(here)
+source(here("reports", "lib.R"))
+
+dta <- dta %>%
+  mutate(bc.OUTCOME = bc.registry,
+         ethnicity = case_when(ethnicity == "White" ~ "white",
+                               TRUE ~ "nonwhite")) %>% 
+  filter(!is.na(genotype2016347))
+
+dta.i <- dta.i %>%
+  mutate(bc.OUTCOME = bc.registry,
+         ethnicity = case_when(ethnicity == "White" ~ "white",
+                               TRUE ~ "nonwhite")) %>% 
+  filter(!is.na(genotype2016347))
+
+dta.is <- dta.is %>%
+  mutate(bc.OUTCOME = bc.registry,
+         ethnicity = case_when(ethnicity == "White" ~ "white",
+                               TRUE ~ "nonwhite")) %>% 
+  filter(!is.na(genotype2016347))
+
+dta1 <- dta1 %>%
+  mutate(bc.OUTCOME = bc.registry,
+         ethnicity = case_when(ethnicity == "White" ~ "white",
+                               TRUE ~ "nonwhite")) %>% 
+  filter(!is.na(genotype2016347))
+
+dta2 <- dta2 %>%
+  mutate(bc.OUTCOME = bc.registry,
+         ethnicity = case_when(ethnicity == "White" ~ "white",
+                               TRUE ~ "nonwhite")) %>% 
+  filter(!is.na(genotype2016347))
+
+dta3 <- dta3 %>%
+  mutate(bc.OUTCOME = bc.registry,
+         ethnicity = case_when(ethnicity == "White" ~ "white",
+                               TRUE ~ "nonwhite")) %>% 
+  filter(!is.na(genotype2016347))
+
+dta4 <- dta4 %>%
+  mutate(bc.OUTCOME = bc.registry,
+         ethnicity = case_when(ethnicity == "White" ~ "white",
+                               TRUE ~ "nonwhite")) %>% 
+  filter(!is.na(genotype2016347))
+
+dta5 <- dta5 %>%
+  mutate(bc.OUTCOME = bc.registry,
+         ethnicity = case_when(ethnicity == "White" ~ "white",
+                               TRUE ~ "nonwhite")) %>% 
+  filter(!is.na(genotype2016347))
+
+dta_cv <- dta %>% 
+  select(eid, year_of_birth_f34_0_0, bmi, smoking, art.stiff.ind, heart.attack.angina.stroke, 
+         high.blood.pressure, diastolic.mean, systolic.mean, bp.med, cv.icd, genotype2016347, genotype2684788,
+         pih.selfreport, t.allele.bin, t.allele.num, hypertension_dx) %>% 
+  filter(!is.na(genotype2016347))
+
+dta_cv <- dta_cv %>% mutate(age.at.entry.5yrs = (2006 - year_of_birth_f34_0_0)/5)
+dta_cv$smoking <- factor(dta_cv$smoking, ordered = FALSE)
+dta_cv$smoking <- relevel(dta_cv$smoking, ref = "Never")
+@
+
+<<nonbreast-cancer, echo = FALSE, results = 'asis'>>=
+## ALL NON-BREAST NON SKIN
+# Set follow-up time
+dta.i <- dta.i %>% 
+  group_by(eid) %>% 
+  mutate(T.eof.allnbns = ifelse(all.non.breast.non.skin.diag == 1, 
+                                as.numeric(format(all.non.breast.non.skin.diag.date, "%Y")) - year_of_birth_f34_0_0, 
+                                ifelse(!is.na(date_death), as.numeric(format(date_death, "%Y")) - year_of_birth_f34_0_0, 
+                                       2015 - year_of_birth_f34_0_0))) %>% 
+  filter(!is.na(genotype2016347))
+
+dta.i.allnbns <- dta.i %>% filter(T.eof.allnbns > agefirstbirth)
+
+dta1.allnbns <- dta.i.allnbns %>% filter(.imp == 1) 
+dta2.allnbns <- dta.i.allnbns %>% filter(.imp == 2)
+dta3.allnbns <- dta.i.allnbns %>% filter(.imp == 3)
+dta4.allnbns <- dta.i.allnbns %>% filter(.imp == 4)
+dta5.allnbns <- dta.i.allnbns %>% filter(.imp == 5)
+
+# Models with Interaction Term
+s1.allnbns <- with(dta1.allnbns, Surv(time = agefirstbirth, time2 = T.eof.allnbns, event = all.non.breast.non.skin.diag))
+s2.allnbns <- with(dta2.allnbns, Surv(time = agefirstbirth, time2 = T.eof.allnbns, event = all.non.breast.non.skin.diag))
+s3.allnbns <- with(dta3.allnbns, Surv(time = agefirstbirth, time2 = T.eof.allnbns, event = all.non.breast.non.skin.diag))
+s4.allnbns <- with(dta4.allnbns, Surv(time = agefirstbirth, time2 = T.eof.allnbns, event = all.non.breast.non.skin.diag))
+s5.allnbns <- with(dta5.allnbns, Surv(time = agefirstbirth, time2 = T.eof.allnbns, event = all.non.breast.non.skin.diag))
+
+# Models - Interaction
+m1.pih <- dta1.allnbns %>% coxph(s1.allnbns ~ pih.selfreport*t.allele.bin + year_of_birth_cat + bmi5pt + as.factor(smoking == "Current") + ethnicity + agefirstbirth5yr , data = ., ties = "efron" ) 
+m2.pih <- dta2.allnbns %>% coxph(s2.allnbns ~ pih.selfreport*t.allele.bin + year_of_birth_cat + bmi5pt + as.factor(smoking == "Current") + ethnicity + agefirstbirth5yr , data = ., ties = "efron" )
+m3.pih <- dta3.allnbns %>% coxph(s3.allnbns ~ pih.selfreport*t.allele.bin + year_of_birth_cat + bmi5pt + as.factor(smoking == "Current") + ethnicity + agefirstbirth5yr , data = ., ties = "efron" )
+m4.pih <- dta4.allnbns %>% coxph(s4.allnbns ~ pih.selfreport*t.allele.bin + year_of_birth_cat + bmi5pt + as.factor(smoking == "Current") + ethnicity + agefirstbirth5yr , data = ., ties = "efron" )
+m5.pih <- dta5.allnbns %>% coxph(s5.allnbns ~ pih.selfreport*t.allele.bin + year_of_birth_cat + bmi5pt + as.factor(smoking == "Current") + ethnicity + agefirstbirth5yr , data = ., ties = "efron" )
+
+
+fit <- list(m1.pih, 
+            m2.pih, 
+            m3.pih, 
+            m4.pih, 
+            m5.pih)
+mods.ixn.allnbns <- summary(pool(fit, dfcom = 206543))
+
+# Survival objects
+s1.allnbns <- with(dta1.allnbns[dta1.allnbns$pih.selfreport == 1, ], Surv(time = agefirstbirth, time2 = T.eof.allnbns, event = all.non.breast.non.skin.diag))
+s2.allnbns <- with(dta2.allnbns[dta2.allnbns$pih.selfreport == 1, ], Surv(time = agefirstbirth, time2 = T.eof.allnbns, event = all.non.breast.non.skin.diag))
+s3.allnbns <- with(dta3.allnbns[dta3.allnbns$pih.selfreport == 1, ], Surv(time = agefirstbirth, time2 = T.eof.allnbns, event = all.non.breast.non.skin.diag))
+s4.allnbns <- with(dta4.allnbns[dta4.allnbns$pih.selfreport == 1, ], Surv(time = agefirstbirth, time2 = T.eof.allnbns, event = all.non.breast.non.skin.diag))
+s5.allnbns <- with(dta5.allnbns[dta5.allnbns$pih.selfreport == 1, ], Surv(time = agefirstbirth, time2 = T.eof.allnbns, event = all.non.breast.non.skin.diag))
+
+# Models - PIH + 
+m1.pih <- dta1.allnbns %>% filter(pih.selfreport == 1) %>% coxph(s1.allnbns ~ t.allele.bin + year_of_birth_cat + bmi5pt + as.factor(smoking == "Current") + ethnicity + agefirstbirth5yr , data = ., ties = "efron" ) 
+m2.pih <- dta2.allnbns %>% filter(pih.selfreport == 1) %>% coxph(s2.allnbns ~ t.allele.bin + year_of_birth_cat + bmi5pt + as.factor(smoking == "Current") + ethnicity + agefirstbirth5yr , data = ., ties = "efron" )
+m3.pih <- dta3.allnbns %>% filter(pih.selfreport == 1) %>% coxph(s3.allnbns ~ t.allele.bin + year_of_birth_cat + bmi5pt + as.factor(smoking == "Current") + ethnicity + agefirstbirth5yr , data = ., ties = "efron" )
+m4.pih <- dta4.allnbns %>% filter(pih.selfreport == 1) %>% coxph(s4.allnbns ~ t.allele.bin + year_of_birth_cat + bmi5pt + as.factor(smoking == "Current") + ethnicity + agefirstbirth5yr , data = ., ties = "efron" )
+m5.pih <- dta5.allnbns %>% filter(pih.selfreport == 1) %>% coxph(s5.allnbns ~ t.allele.bin + year_of_birth_cat + bmi5pt + as.factor(smoking == "Current") + ethnicity + agefirstbirth5yr , data = ., ties = "efron" )
+
+fit <- list(m1.pih, 
+            m2.pih, 
+            m3.pih, 
+            m4.pih, 
+            m5.pih)
+mods.pih <- summary(pool(fit, dfcom = 206543))
+
+# Models - PIH - 
+s1.allnbns <- with(dta1.allnbns[dta1.allnbns$pih.selfreport == 0, ], Surv(time = agefirstbirth, time2 = T.eof.allnbns, event = all.non.breast.non.skin.diag))
+s2.allnbns <- with(dta2.allnbns[dta2.allnbns$pih.selfreport == 0, ], Surv(time = agefirstbirth, time2 = T.eof.allnbns, event = all.non.breast.non.skin.diag))
+s3.allnbns <- with(dta3.allnbns[dta3.allnbns$pih.selfreport == 0, ], Surv(time = agefirstbirth, time2 = T.eof.allnbns, event = all.non.breast.non.skin.diag))
+s4.allnbns <- with(dta4.allnbns[dta4.allnbns$pih.selfreport == 0, ], Surv(time = agefirstbirth, time2 = T.eof.allnbns, event = all.non.breast.non.skin.diag))
+s5.allnbns <- with(dta5.allnbns[dta5.allnbns$pih.selfreport == 0, ], Surv(time = agefirstbirth, time2 = T.eof.allnbns, event = all.non.breast.non.skin.diag))
+
+m1.nopih <- dta1.allnbns %>% filter(pih.selfreport == 0) %>% coxph(s1.allnbns ~ t.allele.bin + year_of_birth_cat + bmi5pt + as.factor(smoking == "Current") + ethnicity + agefirstbirth5yr, data = ., ties = "efron" )
+m2.nopih <- dta2.allnbns %>% filter(pih.selfreport == 0) %>% coxph(s2.allnbns ~ t.allele.bin + year_of_birth_cat + bmi5pt + as.factor(smoking == "Current") + ethnicity + agefirstbirth5yr, data = ., ties = "efron" )
+m3.nopih <- dta3.allnbns %>% filter(pih.selfreport == 0) %>% coxph(s3.allnbns ~ t.allele.bin + year_of_birth_cat + bmi5pt + as.factor(smoking == "Current") + ethnicity + agefirstbirth5yr, data = ., ties = "efron" )
+m4.nopih <- dta4.allnbns %>% filter(pih.selfreport == 0) %>% coxph(s4.allnbns ~ t.allele.bin + year_of_birth_cat + bmi5pt + as.factor(smoking == "Current") + ethnicity + agefirstbirth5yr, data = ., ties = "efron" )
+m5.nopih <- dta5.allnbns %>% filter(pih.selfreport == 0) %>% coxph(s5.allnbns ~ t.allele.bin + year_of_birth_cat + bmi5pt + as.factor(smoking == "Current") + ethnicity + agefirstbirth5yr, data = ., ties = "efron" )
+
+fit <- list(m1.nopih, 
+            m2.nopih, 
+            m3.nopih, 
+            m4.nopih, 
+            m5.nopih)
+# fit.all.nbns <- fit
+mods.nopih <- summary(pool(fit, dfcom = 206543))
+
+
+# mods.nopih.all.nbns <- summary(pool(fit, dfcom = 206543))
+#
+all.nbns.pih <- data.frame(type = "allnbns",
+                           pih.status = "HDP+",
+                       HR = exp(mods.pih["t.allele.bin", "estimate"]),
+                       CI.l = exp(mods.pih["t.allele.bin", "estimate"] - 1.96*mods.pih["t.allele.bin", "std.error"]),
+                       CI.u = exp(mods.pih["t.allele.bin", "estimate"] + 1.96*mods.pih["t.allele.bin", "std.error"]),
+                       p.val = mods.pih["t.allele.bin", "p.value"])
+all.nbns.nopih <- data.frame(type = "allnbns",
+                           pih.status = "HDP-",
+                       HR = exp(mods.nopih["t.allele.bin", "estimate"]),
+                       CI.l = exp(mods.nopih["t.allele.bin", "estimate"] - 1.96*mods.nopih["t.allele.bin", "std.error"]),
+                       CI.u = exp(mods.nopih["t.allele.bin", "estimate"] + 1.96*mods.nopih["t.allele.bin", "std.error"]),
+                       p.val = mods.nopih["t.allele.bin", "p.value"])
+
+@
+
+<<echo = FALSE, cache = TRUE, results = 'asis'>>=
+## ALL BREAST CANCERS
+# Models with Interaction Term
+s1.bc <- with(dta1, Surv(time = agefirstbirth, time2 = T.eof, event = bc.OUTCOME))
+s2.bc <- with(dta2, Surv(time = agefirstbirth, time2 = T.eof, event = bc.OUTCOME))
+s3.bc <- with(dta3, Surv(time = agefirstbirth, time2 = T.eof, event = bc.OUTCOME))
+s4.bc <- with(dta4, Surv(time = agefirstbirth, time2 = T.eof, event = bc.OUTCOME))
+s5.bc <- with(dta5, Surv(time = agefirstbirth, time2 = T.eof, event = bc.OUTCOME))
+
+# Models - PIH + 
+m1.pih <- dta1 %>% coxph(s1.bc ~ pih.selfreport*t.allele.bin + agefirstbirth5yr + year_of_birth_cat + parity + bmi5pt + as.factor(familyhx != "neither") + as.factor(smoking == "Current") + ethnicity, data = ., ties = "efron" ) 
+m2.pih <- dta2 %>% coxph(s2.bc ~ pih.selfreport*t.allele.bin + agefirstbirth5yr + year_of_birth_cat + parity + bmi5pt + as.factor(familyhx != "neither") + as.factor(smoking == "Current") + ethnicity, data = ., ties = "efron" )
+m3.pih <- dta3 %>% coxph(s3.bc ~ pih.selfreport*t.allele.bin + agefirstbirth5yr + year_of_birth_cat + parity + bmi5pt + as.factor(familyhx != "neither") + as.factor(smoking == "Current") + ethnicity, data = ., ties = "efron" )
+m4.pih <- dta4 %>% coxph(s4.bc ~ pih.selfreport*t.allele.bin + agefirstbirth5yr + year_of_birth_cat + parity + bmi5pt + as.factor(familyhx != "neither") + as.factor(smoking == "Current") + ethnicity, data = ., ties = "efron" )
+m5.pih <- dta5 %>% coxph(s5.bc ~ pih.selfreport*t.allele.bin + agefirstbirth5yr + year_of_birth_cat + parity + bmi5pt + as.factor(familyhx != "neither") + as.factor(smoking == "Current") + ethnicity, data = ., ties = "efron" )
+
+fit <- list(m1.pih, 
+            m2.pih, 
+            m3.pih, 
+            m4.pih, 
+            m5.pih)
+mods.ixn.bc <- summary(pool(fit, dfcom = 206543))
+
+
+# Survival objects
+s1.pih <- with(dta1[dta1$pih.selfreport == 1,], Surv(time = agefirstbirth, time2 = T.eof, event = bc.OUTCOME))
+s2.pih <- with(dta2[dta2$pih.selfreport == 1,], Surv(time = agefirstbirth, time2 = T.eof, event = bc.OUTCOME))
+s3.pih <- with(dta3[dta3$pih.selfreport == 1,], Surv(time = agefirstbirth, time2 = T.eof, event = bc.OUTCOME))
+s4.pih <- with(dta4[dta4$pih.selfreport == 1,], Surv(time = agefirstbirth, time2 = T.eof, event = bc.OUTCOME))
+s5.pih <- with(dta5[dta5$pih.selfreport == 1,], Surv(time = agefirstbirth, time2 = T.eof, event = bc.OUTCOME))
+
+# Models
+m1.pih <- dta1 %>% filter(pih.selfreport == 1) %>% coxph(s1.pih ~ t.allele.bin + agefirstbirth5yr + year_of_birth_cat + parity + bmi5pt + as.factor(familyhx != "neither") + as.factor(smoking == "Current") + ethnicity, data = ., ties = "efron" )
+m2.pih <- dta2 %>% filter(pih.selfreport == 1) %>% coxph(s2.pih ~ t.allele.bin + agefirstbirth5yr + year_of_birth_cat + parity + bmi5pt + as.factor(familyhx != "neither") + as.factor(smoking == "Current") + ethnicity, data = ., ties = "efron" )
+m3.pih <- dta3 %>% filter(pih.selfreport == 1) %>% coxph(s3.pih ~ t.allele.bin + agefirstbirth5yr + year_of_birth_cat + parity + bmi5pt + as.factor(familyhx != "neither") + as.factor(smoking == "Current") + ethnicity, data = ., ties = "efron" )
+m4.pih <- dta4 %>% filter(pih.selfreport == 1) %>% coxph(s4.pih ~ t.allele.bin + agefirstbirth5yr + year_of_birth_cat + parity + bmi5pt + as.factor(familyhx != "neither") + as.factor(smoking == "Current") + ethnicity, data = ., ties = "efron" )
+m5.pih <- dta5 %>% filter(pih.selfreport == 1) %>% coxph(s5.pih ~ t.allele.bin + agefirstbirth5yr + year_of_birth_cat + parity + bmi5pt + as.factor(familyhx != "neither") + as.factor(smoking == "Current") + ethnicity, data = ., ties = "efron" )
+
+fit <- list(m1.pih, 
+            m2.pih, 
+            m3.pih, 
+            m4.pih, 
+            m5.pih)
+mods.pih <- summary(pool(fit, dfcom = 206543))
+
+# Survival objects
+s1.nopih <- with(dta1[dta1$pih.selfreport == 0,], Surv(time = agefirstbirth, time2 = T.eof, event = bc.OUTCOME))
+s2.nopih <- with(dta2[dta2$pih.selfreport == 0,], Surv(time = agefirstbirth, time2 = T.eof, event = bc.OUTCOME))
+s3.nopih <- with(dta3[dta3$pih.selfreport == 0,], Surv(time = agefirstbirth, time2 = T.eof, event = bc.OUTCOME))
+s4.nopih <- with(dta4[dta4$pih.selfreport == 0,], Surv(time = agefirstbirth, time2 = T.eof, event = bc.OUTCOME))
+s5.nopih <- with(dta5[dta5$pih.selfreport == 0,], Surv(time = agefirstbirth, time2 = T.eof, event = bc.OUTCOME))
+
+# Models
+m1.nopih <- dta1 %>% filter(pih.selfreport == 0) %>% coxph(s1.nopih ~ t.allele.bin + agefirstbirth5yr + year_of_birth_cat + parity + bmi5pt + as.factor(familyhx != "neither") + as.factor(smoking == "Current") + ethnicity, data = ., ties = "efron" )
+m2.nopih <- dta2 %>% filter(pih.selfreport == 0) %>% coxph(s2.nopih ~ t.allele.bin + agefirstbirth5yr + year_of_birth_cat + parity + bmi5pt + as.factor(familyhx != "neither") + as.factor(smoking == "Current") + ethnicity, data = ., ties = "efron" )
+m3.nopih <- dta3 %>% filter(pih.selfreport == 0) %>% coxph(s3.nopih ~ t.allele.bin + agefirstbirth5yr + year_of_birth_cat + parity + bmi5pt + as.factor(familyhx != "neither") + as.factor(smoking == "Current") + ethnicity, data = ., ties = "efron" )
+m4.nopih <- dta4 %>% filter(pih.selfreport == 0) %>% coxph(s4.nopih ~ t.allele.bin + agefirstbirth5yr + year_of_birth_cat + parity + bmi5pt + as.factor(familyhx != "neither") + as.factor(smoking == "Current") + ethnicity, data = ., ties = "efron" )
+m5.nopih <- dta5 %>% filter(pih.selfreport == 0) %>% coxph(s5.nopih ~ t.allele.bin + agefirstbirth5yr + year_of_birth_cat + parity + bmi5pt + as.factor(familyhx != "neither") + as.factor(smoking == "Current") + ethnicity, data = ., ties = "efron" )
+
+fit <- list(m1.nopih, 
+            m2.nopih, 
+            m3.nopih, 
+            m4.nopih, 
+            m5.nopih)
+# fit.bc <- fit
+mods.nopih <- summary(pool(fit, dfcom = 206543))
+
+# 
+bc.mod.pih <- data.frame(type = "bc",
+                     pih.status = "HDP+",
+                     HR = exp(mods.pih["t.allele.bin", "estimate"]),
+                     CI.l = exp(mods.pih["t.allele.bin", "estimate"] - 1.96*mods.pih["t.allele.bin", "std.error"]),
+                     CI.u = exp(mods.pih["t.allele.bin", "estimate"] + 1.96*mods.pih["t.allele.bin", "std.error"]),
+                     p.val = mods.pih["t.allele.bin", "p.value"])
+bc.mod.nopih <- data.frame(type = "bc",
+                     pih.status = "HDP-",
+                     HR = exp(mods.nopih["t.allele.bin", "estimate"]),
+                     CI.l = exp(mods.nopih["t.allele.bin", "estimate"] - 1.96*mods.nopih["t.allele.bin", "std.error"]),
+                     CI.u = exp(mods.nopih["t.allele.bin", "estimate"] + 1.96*mods.nopih["t.allele.bin", "std.error"]),
+                     p.val = mods.nopih["t.allele.bin", "p.value"])
+@
+
+<<echo = FALSE, results = 'asis'>>=
+mods.ixn.cv <- dta_cv %>%
+  glm(cv.icd ~ pih.selfreport*t.allele.bin + age.at.entry.5yrs + bmi + as.factor(smoking), 
+      data = ., 
+      family = binomial(link = "logit"))
+
+# mods.ixn.cv.2 <- dta_cv %>%
+#   glm(cv.icd ~ pih.selfreport*t.allele.bin + age.at.entry.5yrs, # removing bmi and smoking just to see if results change
+#       data = ., 
+#       family = binomial(link = "logit"))
+
+m6.pih <- dta_cv %>%
+  filter(pih.selfreport == 1) %>%
+  glm(cv.icd ~ t.allele.bin + age.at.entry.5yrs + bmi + as.factor(smoking), 
+      data = ., 
+      family = binomial(link = "logit"))
+
+
+m6.nopih <- dta_cv %>%
+  filter(pih.selfreport == 0) %>%
+  glm(cv.icd ~ t.allele.bin + age.at.entry.5yrs + bmi + as.factor(smoking), 
+      data = ., 
+      family = binomial(link = "logit"))
+
+
+# cvd model
+cvd.mod.pih <- data.frame(type = "cvd",
+                      pih.status = "HDP+",
+                      HR = exp(summary(m6.pih)$coefficients["t.allele.bin",1]),
+                      CI.l = exp(confint.default(m6.pih))["t.allele.bin",1],
+                      CI.u = exp(confint.default(m6.pih))["t.allele.bin",2],
+                      p.val = summary(m6.pih)$coefficients["t.allele.bin", "Pr(>|z|)"])
+
+cvd.mod.nopih <- data.frame(type = "cvd",
+                      pih.status = "HDP-",
+                      HR = exp(summary(m6.nopih)$coefficients["t.allele.bin",1]),
+                      CI.l = exp(confint.default(m6.nopih))["t.allele.bin",1],
+                      CI.u = exp(confint.default(m6.nopih))["t.allele.bin",2],
+                      p.val = summary(m6.nopih)$coefficients["t.allele.bin", "Pr(>|z|)"])
+
+@
+
+<<echo = FALSE, results = 'asis'>>=
+mods.ixn.htn <- dta_cv %>%
+  glm(hypertension_dx ~ pih.selfreport*t.allele.bin + age.at.entry.5yrs + bmi + as.factor(smoking), 
+      data = ., 
+      family = binomial(link = "logit"))
+
+mod_htn.pih <- dta_cv %>%
+  filter(pih.selfreport == 1) %>%
+  glm(hypertension_dx ~ t.allele.bin + age.at.entry.5yrs + bmi + as.factor(smoking), 
+      data = ., 
+      family = binomial(link = "logit"))
+
+
+mod_htn.nopih <- dta_cv %>%
+  filter(pih.selfreport == 0) %>%
+  glm(hypertension_dx ~ t.allele.bin + age.at.entry.5yrs + bmi + as.factor(smoking), 
+      data = ., 
+      family = binomial(link = "logit"))
+
+
+htn.mod.pih <- data.frame(type = "hypertension", 
+                          pih.status = "HDP+",
+                          HR = exp(summary(mod_htn.pih)$coefficients["t.allele.bin",1]),
+                          CI.l = exp(confint.default(mod_htn.pih))["t.allele.bin", 1],
+                          CI.u = exp(confint.default(mod_htn.pih))["t.allele.bin", 2],
+                          p.val = summary(mod_htn.pih)$coefficients["t.allele.bin", "Pr(>|z|)"])
+htn.mod.nopih <- data.frame(type = "hypertension", 
+                            pih.status = "HDP-",
+                            HR = exp(summary(mod_htn.nopih)$coefficients["t.allele.bin",1]),
+                            CI.l = exp(confint.default(mod_htn.nopih))["t.allele.bin", 1],
+                            CI.u = exp(confint.default(mod_htn.nopih))["t.allele.bin", 2],
+                            p.val = summary(mod_htn.nopih)$coefficients["t.allele.bin", "Pr(>|z|)"])
+@
+
+<<echo = FALSE, results = 'asis'>>=
+mods.ixn.dbp <- dta_cv %>%
+  lm(diastolic.mean ~ pih.selfreport*t.allele.bin + age.at.entry.5yrs + bmi + as.factor(smoking) + bp.med, 
+         data = .)
+mods.ixn.sbp <- dta_cv %>%
+  lm(systolic.mean ~ pih.selfreport*t.allele.bin + age.at.entry.5yrs + bmi + as.factor(smoking) + bp.med, 
+         data = .)
+
+m_dbp_pih <- dta_cv %>%
+  filter(pih.selfreport == 1) %>%
+  lm(diastolic.mean ~ t.allele.bin + age.at.entry.5yrs + bmi + as.factor(smoking) + bp.med, 
+         data = .)
+
+
+m_dbp_nopih <- dta_cv %>%
+  filter(pih.selfreport == 0) %>%
+  lm(diastolic.mean ~ t.allele.bin + age.at.entry.5yrs + bmi + as.factor(smoking) + bp.med, 
+         data = .)
+
+
+m_sbp_pih <- dta_cv %>%
+  filter(pih.selfreport == 1) %>%
+  lm(systolic.mean ~ t.allele.bin + age.at.entry.5yrs + bmi + as.factor(smoking) + bp.med, 
+         data = .)
+
+m_sbp_nopih <- dta_cv %>%
+  filter(pih.selfreport == 0) %>%
+  lm(systolic.mean ~ t.allele.bin + age.at.entry.5yrs + bmi + as.factor(smoking) + bp.med, 
+         data = .)
+
+bp_mod_pih <- data.frame(type = c("sysbp", "diasbp"),
+                     pih.status = c("HDP+", "HDP+"),
+                     HR = c(summary(m_sbp_pih)$coefficients["t.allele.bin",1],
+                            summary(m_dbp_pih)$coefficients["t.allele.bin",1]),
+                     CI.l = c(confint.default(m_sbp_pih)["t.allele.bin",1], 
+                              confint.default(m_dbp_pih)["t.allele.bin",1]),
+                     CI.u = c(confint.default(m_sbp_pih)["t.allele.bin",2], 
+                              confint.default(m_dbp_pih)["t.allele.bin",2]),
+                     p.val = c(summary(m_sbp_pih)$coefficients["t.allele.bin","Pr(>|t|)"],
+                               summary(m_dbp_pih)$coefficients["t.allele.bin","Pr(>|t|)"]))
+
+bp_mod_nopih <- data.frame(type = c("sysbp", "diasbp"),
+                     pih.status = c("HDP-", "HDP-"),
+                     HR = c(summary(m_sbp_nopih)$coefficients["t.allele.bin",1],
+                            summary(m_dbp_nopih)$coefficients["t.allele.bin",1]),
+                     CI.l = c(confint.default(m_sbp_nopih)["t.allele.bin",1], 
+                              confint.default(m_dbp_nopih)["t.allele.bin",1]),
+                     CI.u = c(confint.default(m_sbp_nopih)["t.allele.bin",2], 
+                              confint.default(m_dbp_nopih)["t.allele.bin",2]),
+                     p.val = c(summary(m_sbp_nopih)$coefficients["t.allele.bin","Pr(>|t|)"],
+                               summary(m_dbp_nopih)$coefficients["t.allele.bin","Pr(>|t|)"]))
+@
+
+\setcounter{table}{3}
+<<echo = FALSE, results = "asis">>=
+interaction_models <- data.frame(
+  type = c("allnbns","bc", "cvd", "hypertension", "sysbp", "diasbp"),
+  intxn.pval = c(format(round(mods.ixn.allnbns["pih.selfreport:t.allele.bin", "p.value"], 2), nsmall = 2),
+                 format(round(mods.ixn.bc["pih.selfreport:t.allele.bin", "p.value"], 2), nsmall = 2),
+                 format(round(summary(mods.ixn.cv)$coef["pih.selfreport:t.allele.bin", "Pr(>|z|)"], 2), nsmall = 2),
+                 format(round(summary(mods.ixn.htn)$coef["pih.selfreport:t.allele.bin", "Pr(>|z|)"], 2), nsmall = 2),
+                 format(round(summary(mods.ixn.sbp)$coef["pih.selfreport:t.allele.bin", "Pr(>|t|)"], 2), nsmall = 2),
+                 format(round(summary(mods.ixn.dbp)$coef["pih.selfreport:t.allele.bin", "Pr(>|t|)"], 2), nsmall = 2))
+)
+
+
+output <- bind_rows(all.nbns.pih, all.nbns.nopih,
+                    bc.mod.pih, bc.mod.nopih,
+                    cvd.mod.pih, cvd.mod.nopih,
+                    htn.mod.pih, htn.mod.nopih,
+                    bp_mod_pih, bp_mod_nopih) %>%
+  mutate(Outcome = case_when(type == "allnbns" ~ "Non-breast cancers",
+                          type == "bc" ~ "Breast cancer",
+                          type == "cvd" ~ "Hospital CVD Diagnosis",
+                          type == "hypertension" ~ "Hospital HTN Diagnosis",
+                          type == "sysbp" ~ "Systolic Blood Pressure",
+                          type == "diasbp" ~ "Diastolic Blood Pressure"),
+    `M.o.A. (95% CI)` = paste0(format(round(HR, 2),nsmall = 2), " (", 
+                           format(round(CI.l,2),nsmall = 2), ", ",
+                           format(round(CI.u,2),nsmall = 2), ")"),
+         `p-value` = format(round(p.val,2),nsmall = 2))  
+
+output.pih <- output %>% 
+  filter(pih.status == "HDP+") %>%
+  dplyr::select(Outcome, pih.status, `M.o.A. (95% CI)`, `p-value`) %>% 
+  dplyr::select(-pih.status)
+output.nopih <- output %>% 
+  filter(pih.status == "HDP-") %>%
+  dplyr::select(Outcome, pih.status, `M.o.A. (95% CI)`, `p-value`) %>%
+  dplyr::select(-pih.status)
+
+bind_cols(output.pih, select(output.nopih, -Outcome), select(interaction_models, -type)) %>%
+  mutate(`Interaction p-value` = intxn.pval) %>%
+  select(-intxn.pval) %>%
+  kable(caption = "Results for rs2016347 genotype stratified by HDP status",
+        booktabs = T,
+        format = "latex",
+        align = "lrrrrr",
+        linesep = "") %>%
+  column_spec(1, width = "6cm") %>%
+  kable_styling(latex_options = "scale_down",
+                font_size = 11) %>%
+  add_header_above(c(" " = 1, "HDP+" = 2, "HDP-" = 2)) %>%
+  footnote(#general = "Here is a general comments of the table. ",
+           symbol = c("Hazard ratio adjusted for birth year, BMI, smoking status, and age at first birth;", 
+                      "Hazard ratio adjusted for birth year, BMI, age at first birth, ethnicity, and family history;",
+                      "Odds ratio adjusted for age at time of study, BMI, and smoking status;",
+                      "Odds ratio adjusted for age at time of study, BMI, and smoking status;",
+                      "Additive change adjusted for age at time of study, BMI, smoking status, and current use of blood pressure medication;",
+                      "Additive change adjusted for age at time of study, BMI, smoking status, and current use of blood pressure medication."),
+  #          alphabet = c("Those with blood pressure above the median messured value;")
+  #          # alphabet = c("Footnote A; ", "Footnote B; "),
+  #          # symbol = c("Footnote Symbol 1; ", "Footnote Symbol 2"))
+   )
+@
+
+\section{Model Fit Statistics}
+
+<<echo = FALSE, eval = FALSE>>=
+library(lmtest)
+
+# Models - Proportional Hazards Assumption 
+s1.bc <- with(dta1, Surv(time = agefirstbirth, time2 = T.eof, event = bc.OUTCOME))
+s2.bc <- with(dta2, Surv(time = agefirstbirth, time2 = T.eof, event = bc.OUTCOME))
+s3.bc <- with(dta3, Surv(time = agefirstbirth, time2 = T.eof, event = bc.OUTCOME))
+s4.bc <- with(dta4, Surv(time = agefirstbirth, time2 = T.eof, event = bc.OUTCOME))
+s5.bc <- with(dta5, Surv(time = agefirstbirth, time2 = T.eof, event = bc.OUTCOME))
+
+# Models - (No time covariate)
+m1.notime <- dta1 %>% coxph(s1.bc ~ pih.selfreport*t.allele.bin + agefirstbirth5yr + year_of_birth_cat + parity + bmi5pt + as.factor(familyhx != "neither") + as.factor(smoking == "Current") + ethnicity, data = ., ties = "efron" ) 
+
+# Models - with time covariate
+m1.time <- dta1 %>% coxph(s1.bc ~ tt(pih.selfreport) + pih.selfreport*t.allele.bin + agefirstbirth5yr + year_of_birth_cat + parity + bmi5pt + as.factor(familyhx != "neither") + as.factor(smoking == "Current") + ethnicity, data = ., ties = "efron", tt = function(x,t,...)x*t ) 
+
+@
+
+<<echo = FALSE, results = 'asis'>>=
+# # BC
+# # Survival objects
+# s1.pih <- with(dta1[dta1$pih.selfreport == 1,], Surv(time = agefirstbirth, time2 = T.eof, event = bc.OUTCOME))
+# # s2.pih <- with(dta2[dta2$pih.selfreport == 1,], Surv(time = agefirstbirth, time2 = T.eof, event = bc.OUTCOME))
+# # s3.pih <- with(dta3[dta3$pih.selfreport == 1,], Surv(time = agefirstbirth, time2 = T.eof, event = bc.OUTCOME))
+# # s4.pih <- with(dta4[dta4$pih.selfreport == 1,], Surv(time = agefirstbirth, time2 = T.eof, event = bc.OUTCOME))
+# # s5.pih <- with(dta5[dta5$pih.selfreport == 1,], Surv(time = agefirstbirth, time2 = T.eof, event = bc.OUTCOME))
+# 
+# # Models
+# m1.pih.dominant <- dta1 %>% filter(pih.selfreport == 1) %>% coxph(s1.pih ~ t.allele.bin + agefirstbirth5yr + year_of_birth_cat + parity + bmi5pt + as.factor(familyhx != "neither") + ethnicity, data = ., ties = "efron" )
+# m1.pih.factor <- dta1 %>% filter(pih.selfreport == 1) %>% coxph(s1.pih ~ genotype2016347 + agefirstbirth5yr + year_of_birth_cat + parity + bmi5pt + as.factor(familyhx != "neither") + ethnicity, data = ., ties = "efron" )
+# m1.pih.linear <- dta1 %>% filter(pih.selfreport == 1) %>% coxph(s1.pih ~ t.allele.num + agefirstbirth5yr + year_of_birth_cat + parity + bmi5pt + as.factor(familyhx != "neither") + ethnicity, data = ., ties = "efron" )
+# 
+# lrtest(m1.pih.dominant, m1.pih.factor)
+# lrtest(m1.pih.dominant, m1.pih.linear)
+# 
+# # Survival objects
+# s1.nopih <- with(dta1[dta1$pih.selfreport == 0,], Surv(time = agefirstbirth, time2 = T.eof, event = bc.OUTCOME))
+# 
+# # Models
+# m1.nopih.dominant <- dta1 %>% filter(pih.selfreport == 0) %>% coxph(s1.nopih ~ t.allele.bin + agefirstbirth5yr + year_of_birth_cat + parity + bmi5pt + as.factor(familyhx != "neither") + ethnicity, data = ., ties = "efron" )
+# m1.nopih.factor <- dta1 %>% filter(pih.selfreport == 0) %>% coxph(s1.nopih ~ genotype2016347 + agefirstbirth5yr + year_of_birth_cat + parity + bmi5pt + as.factor(familyhx != "neither") + ethnicity, data = ., ties = "efron" )
+# m1.nopih.linear <- dta1 %>% filter(pih.selfreport == 0) %>% coxph(s1.nopih ~ t.allele.num + agefirstbirth5yr + year_of_birth_cat + parity + bmi5pt + as.factor(familyhx != "neither") + ethnicity, data = ., ties = "efron" )
+# 
+# lrtest(m1.nopih.dominant, m1.nopih.factor)
+# lrtest(m1.nopih.dominant, m1.nopih.linear)
+# 
+# # All Non-BC Cancers
+# # Survival objects
+# s1.allnbns <- with(dta1.allnbns[dta1.allnbns$pih.selfreport == 1, ], Surv(time = agefirstbirth, time2 = T.eof.allnbns, event = all.non.breast.non.skin.diag))
+# # s2.pih <- with(dta2[dta2$pih.selfreport == 1,], Surv(time = agefirstbirth, time2 = T.eof, event = bc.OUTCOME))
+# # s3.pih <- with(dta3[dta3$pih.selfreport == 1,], Surv(time = agefirstbirth, time2 = T.eof, event = bc.OUTCOME))
+# # s4.pih <- with(dta4[dta4$pih.selfreport == 1,], Surv(time = agefirstbirth, time2 = T.eof, event = bc.OUTCOME))
+# # s5.pih <- with(dta5[dta5$pih.selfreport == 1,], Surv(time = agefirstbirth, time2 = T.eof, event = bc.OUTCOME))
+# 
+# # Models
+# m1.pih.dominant <- dta1.allnbns %>% filter(pih.selfreport == 1) %>% coxph(s1.allnbns ~ t.allele.bin + year_of_birth_cat + bmi5pt + as.factor(smoking == "Current") + agefirstbirth5yr , data = ., ties = "efron" ) 
+# m1.pih.factor <- dta1.allnbns %>% filter(pih.selfreport == 1) %>% coxph(s1.allnbns ~ genotype2016347 + year_of_birth_cat + bmi5pt + as.factor(smoking == "Current") + agefirstbirth5yr , data = ., ties = "efron" ) 
+# m1.pih.linear <- dta1.allnbns %>% filter(pih.selfreport == 1) %>% coxph(s1.allnbns ~ t.allele.num + year_of_birth_cat + bmi5pt + as.factor(smoking == "Current") + agefirstbirth5yr , data = ., ties = "efron" ) 
+# 
+# lrtest(m1.pih.dominant, m1.pih.factor)
+# lrtest(m1.pih.dominant, m1.pih.linear)
+# 
+# # Survival objects
+# s1.nopih <- with(dta1.allnbns[dta1.allnbns$pih.selfreport == 0, ], Surv(time = agefirstbirth, time2 = T.eof.allnbns, event = all.non.breast.non.skin.diag))
+# 
+# # Models
+# m1.nopih.dominant <- dta1.allnbns %>% filter(pih.selfreport == 0) %>% coxph(s1.nopih ~ t.allele.bin + year_of_birth_cat + bmi5pt + as.factor(smoking == "Current") + agefirstbirth5yr , data = ., ties = "efron" ) 
+# m1.nopih.factor <- dta1.allnbns %>% filter(pih.selfreport == 0) %>% coxph(s1.nopih ~ genotype2016347 + year_of_birth_cat + bmi5pt + as.factor(smoking == "Current") + agefirstbirth5yr, data = ., ties = "efron" )
+# m1.nopih.linear <- dta1.allnbns %>% filter(pih.selfreport == 0) %>% coxph(s1.nopih ~ t.allele.num + year_of_birth_cat + bmi5pt + as.factor(smoking == "Current") + agefirstbirth5yr , data = ., ties = "efron" ) 
+# 
+# lrtest(m1.nopih.dominant, m1.nopih.factor)
+# lrtest(m1.nopih.dominant, m1.nopih.linear)
+@
+
+
+
+\section{Forest Plot}
+
+<<echo = FALSE, eval = FALSE>>=
+out.forest.pih <- output %>%
+  filter(pih.status == "HDP+") 
+p1 <- out.forest.pih %>%
+  filter(!Outcome %in% c("Systolic Blood Pressure", "Diastolic Blood Pressure")) %>%
+  mutate(id = row_number()) %>%
+  ggplot(aes(HR,-id)) + 
+  geom_vline(xintercept = 1, linetype = "longdash") +
+  geom_errorbarh(aes(xmax = CI.u, xmin = CI.l), height = 0) +
+  geom_point(size=5, shape=16, col = "darkgreen") +
+  ylim(-4.15, -0.8) +
+  theme_classic() +
+  scale_x_continuous(breaks = seq(0,2,0.5), labels = seq(0,2,0.5), limits = c(0,2.1)) +
+  labs(x="", y="") + 
+  theme(axis.line.y = element_blank(),
+        axis.text.y = element_blank(),
+        axis.text.x = element_text(size = 16,
+                                   family = "Times"),
+        axis.ticks.y = element_blank(),
+        axis.line.x = element_line(colour = "black"),
+        plot.background = element_rect(fill = "transparent"),
+        panel.background = element_rect(fill = "transparent"))
+
+p2 <- out.forest.pih %>%
+  filter(Outcome %in% c("Systolic Blood Pressure", "Diastolic Blood Pressure")) %>%
+  mutate(id = row_number()) %>%
+  ggplot(aes(HR,-id/1.1)) + 
+  geom_vline(xintercept = 0, linetype = "longdash") +
+  geom_errorbarh(aes(xmax = CI.u, xmin = CI.l), height = 0) +
+  geom_point(size=5, shape=16, col = "darkgreen") +
+  ylim(-2.2, -0.70) +
+  scale_x_continuous(breaks = seq(-5,5,2.5), labels = seq(-5,5,2.5), limits = c(-5,5.475)) +
+  labs(x="", y="") + 
+  theme_classic() +
+  theme(axis.line.y = element_blank(),
+        axis.text.y = element_blank(),
+        axis.text.x = element_text(size = 16,
+                                   family = "Times"),
+        axis.ticks.y = element_blank(),
+        axis.line.x = element_line(colour = "black"),
+        plot.background = element_rect(fill = "transparent"),
+        panel.background = element_rect(fill = "transparent"))
+
+p_pih <- grid.arrange(arrangeGrob(p1,p2, 
+                                  ncol = 1, 
+                                  #respect = TRUE,
+                                  heights = c(8.5,4)))
+p_pih
+
+ggsave(plot = p_pih,
+       filename = here("graphs", "2019-11-16_pih-strat.pdf"),
+       device = "pdf",
+       bg = "transparent",
+       #fontfamily = "Times",
+       units = "in",
+       width = 7,
+       height = 7)
+
+out.forest.nopih <- output %>%
+  filter(pih.status == "HDP-") 
+p1 <- out.forest.nopih %>%
+  filter(!Outcome %in% c("Systolic Blood Pressure", "Diastolic Blood Pressure")) %>%
+  mutate(id = row_number()) %>%
+  ggplot(aes(HR,-id)) + 
+  theme_classic() +
+  geom_vline(xintercept = 1, linetype = "longdash") +
+  geom_errorbarh(aes(xmax = CI.u, xmin = CI.l), height = 0) +
+  geom_point(size=5, shape=16, col = "darkgreen") +
+  ylim(-4.15, -0.8) +
+  scale_x_continuous(breaks = seq(0,2,0.5), labels = seq(0,2,0.5), limits = c(0,2.1)) +
+  labs(x="", y="") + 
+  theme(axis.line.y = element_blank(),
+        axis.text.y = element_blank(),
+        axis.text.x = element_text(size = 16,
+                                   family = "Times"),
+        axis.ticks.y = element_blank(),
+        axis.line.x = element_line(colour = "black"),
+        plot.background = element_rect(fill = "transparent"),
+        panel.background = element_rect(fill = "transparent"))
+
+p2 <- out.forest.nopih %>%
+  filter(Outcome %in% c("Systolic Blood Pressure", "Diastolic Blood Pressure")) %>%
+  mutate(id = row_number()) %>%
+  ggplot(aes(HR,-id/1.1)) + 
+  geom_vline(xintercept = 0, linetype = "longdash") +
+  geom_errorbarh(aes(xmax = CI.u, xmin = CI.l), height = 0) +
+  geom_point(size=5, shape=16, col = "darkgreen") +
+  ylim(-2.2, -0.70) +
+  scale_x_continuous(breaks = seq(-5,5,2.5), labels = seq(-5,5,2.5), limits = c(-5,5.475)) +
+  labs(x="", y="") + 
+  theme_classic() +
+  theme(axis.line.y = element_blank(),
+        axis.text.y = element_blank(),
+        axis.text.x = element_text(size = 16,
+                                   family = "Times"),
+        axis.ticks.y = element_blank(),
+        axis.line.x = element_line(colour = "black"),
+        plot.background = element_rect(fill = "transparent"),
+        panel.background = element_rect(fill = "transparent"))
+        
+
+p_nopih <- grid.arrange(arrangeGrob(p1,p2, 
+                                  ncol = 1, 
+                                  heights = c(8.5,4)))
+p_nopih
+
+ggsave(plot = p_nopih,
+       filename = here("graphs", "2019-11-16_nopih-strat.pdf"),
+       device = "pdf",
+       bg = "transparent",
+       units = "in",
+       width = 7,
+       height = 7)
+  
+@
+
+\section{Genotype Testing}
+
+<<echo = FALSE, eval = FALSE>>=
+
+# All NBNS, PIH+
+s1.allnbns <- with(dta1.allnbns[dta1.allnbns$pih.selfreport == 1, ], Surv(time = agefirstbirth, time2 = T.eof.allnbns, event = all.non.breast.non.skin.diag))
+s2.allnbns <- with(dta2.allnbns[dta2.allnbns$pih.selfreport == 1, ], Surv(time = agefirstbirth, time2 = T.eof.allnbns, event = all.non.breast.non.skin.diag))
+s3.allnbns <- with(dta3.allnbns[dta3.allnbns$pih.selfreport == 1, ], Surv(time = agefirstbirth, time2 = T.eof.allnbns, event = all.non.breast.non.skin.diag))
+s4.allnbns <- with(dta4.allnbns[dta4.allnbns$pih.selfreport == 1, ], Surv(time = agefirstbirth, time2 = T.eof.allnbns, event = all.non.breast.non.skin.diag))
+s5.allnbns <- with(dta5.allnbns[dta5.allnbns$pih.selfreport == 1, ], Surv(time = agefirstbirth, time2 = T.eof.allnbns, event = all.non.breast.non.skin.diag))
+
+# Models - PIH + 
+m1.pih.rec <- dta1.allnbns %>% filter(pih.selfreport == 1) %>% coxph(s1.allnbns ~ t.allele.bin + year_of_birth_cat + bmi5pt + as.factor(smoking == "Current") + agefirstbirth5yr , data = ., ties = "efron" ) 
+m2.pih.rec <- dta2.allnbns %>% filter(pih.selfreport == 1) %>% coxph(s2.allnbns ~ t.allele.bin + year_of_birth_cat + bmi5pt + as.factor(smoking == "Current") + agefirstbirth5yr , data = ., ties = "efron" )
+m3.pih.rec <- dta3.allnbns %>% filter(pih.selfreport == 1) %>% coxph(s3.allnbns ~ t.allele.bin + year_of_birth_cat + bmi5pt + as.factor(smoking == "Current") + agefirstbirth5yr , data = ., ties = "efron" )
+m4.pih.rec <- dta4.allnbns %>% filter(pih.selfreport == 1) %>% coxph(s4.allnbns ~ t.allele.bin + year_of_birth_cat + bmi5pt + as.factor(smoking == "Current") + agefirstbirth5yr , data = ., ties = "efron" )
+m5.pih.rec <- dta5.allnbns %>% filter(pih.selfreport == 1) %>% coxph(s5.allnbns ~ t.allele.bin + year_of_birth_cat + bmi5pt + as.factor(smoking == "Current") + agefirstbirth5yr , data = ., ties = "efron" )
+
+m1.pih.cod <- dta1.allnbns %>% filter(pih.selfreport == 1) %>% coxph(s1.allnbns ~ genotype2016347 + year_of_birth_cat + bmi5pt + as.factor(smoking == "Current") + agefirstbirth5yr , data = ., ties = "efron" )
+m2.pih.cod <- dta2.allnbns %>% filter(pih.selfreport == 1) %>% coxph(s2.allnbns ~ genotype2016347 + year_of_birth_cat + bmi5pt + as.factor(smoking == "Current") + agefirstbirth5yr , data = ., ties = "efron" )
+m3.pih.cod <- dta3.allnbns %>% filter(pih.selfreport == 1) %>% coxph(s3.allnbns ~ genotype2016347 + year_of_birth_cat + bmi5pt + as.factor(smoking == "Current") + agefirstbirth5yr , data = ., ties = "efron" )
+m4.pih.cod <- dta4.allnbns %>% filter(pih.selfreport == 1) %>% coxph(s4.allnbns ~ genotype2016347 + year_of_birth_cat + bmi5pt + as.factor(smoking == "Current") + agefirstbirth5yr , data = ., ties = "efron" )
+m5.pih.cod <- dta5.allnbns %>% filter(pih.selfreport == 1) %>% coxph(s5.allnbns ~ genotype2016347 + year_of_birth_cat + bmi5pt + as.factor(smoking == "Current") + agefirstbirth5yr , data = ., ties = "efron" )
+
+m1.pih.add <- dta1.allnbns %>% filter(pih.selfreport == 1) %>% coxph(s1.allnbns ~ t.allele.num + year_of_birth_cat + bmi5pt + as.factor(smoking == "Current") + agefirstbirth5yr , data = ., ties = "efron" )
+m2.pih.add <- dta2.allnbns %>% filter(pih.selfreport == 1) %>% coxph(s2.allnbns ~ t.allele.num + year_of_birth_cat + bmi5pt + as.factor(smoking == "Current") + agefirstbirth5yr , data = ., ties = "efron" )
+m3.pih.add <- dta3.allnbns %>% filter(pih.selfreport == 1) %>% coxph(s3.allnbns ~ t.allele.num + year_of_birth_cat + bmi5pt + as.factor(smoking == "Current") + agefirstbirth5yr , data = ., ties = "efron" )
+m4.pih.add <- dta4.allnbns %>% filter(pih.selfreport == 1) %>% coxph(s4.allnbns ~ t.allele.num + year_of_birth_cat + bmi5pt + as.factor(smoking == "Current") + agefirstbirth5yr , data = ., ties = "efron" )
+m5.pih.add <- dta5.allnbns %>% filter(pih.selfreport == 1) %>% coxph(s5.allnbns ~ t.allele.num + year_of_birth_cat + bmi5pt + as.factor(smoking == "Current") + agefirstbirth5yr , data = ., ties = "efron" )
+
+fit.add <- list(
+  m1.pih.add, 
+  m2.pih.add, 
+  m3.pih.add, 
+  m4.pih.add, 
+  m5.pih.add)
+fit.cod <- list(
+  m1.pih.cod, 
+  m2.pih.cod, 
+  m3.pih.cod, 
+  m4.pih.cod, 
+  m5.pih.cod)
+fit.rec <- list(
+  m1.pih.rec, 
+  m2.pih.rec, 
+  m3.pih.rec, 
+  m4.pih.rec, 
+  m5.pih.rec)
+mods.pih.add <- summary(pool(fit.add, dfcom = 206543))
+mods.pih.cod <- summary(pool(fit.cod, dfcom = 206543))
+mods.pih.rec <- summary(pool(fit.rec, dfcom = 206543))
+
+lmtest::lrtest(m1.pih.rec, m1.pih.cod)
+lmtest::lrtest(m2.pih.rec, m2.pih.cod)
+lmtest::lrtest(m3.pih.rec, m3.pih.cod)
+lmtest::lrtest(m4.pih.rec, m4.pih.cod)
+lmtest::lrtest(m5.pih.rec, m5.pih.cod)
+
+lmtest::lrtest(m1.pih.cod, m1.pih.add)
+lmtest::lrtest(m2.pih.cod, m2.pih.add)
+lmtest::lrtest(m3.pih.cod, m3.pih.add)
+lmtest::lrtest(m4.pih.cod, m4.pih.add)
+lmtest::lrtest(m5.pih.cod, m5.pih.add)
+@
+
+<<echo = FALSE, eval = FALSE>>=
+m_sbp_pih_rec <- dta_cv %>%
+  filter(pih.selfreport == 1) %>%
+  lm(systolic.mean ~ t.allele.bin + age.at.entry.5yrs + bmi + as.factor(smoking) + bp.med, 
+         data = .)
+m_sbp_pih_cod <- dta_cv %>%
+  filter(pih.selfreport == 1) %>%
+  lm(systolic.mean ~ genotype2016347 + age.at.entry.5yrs + bmi + as.factor(smoking) + bp.med, 
+         data = .)
+m_sbp_pih_add <- dta_cv %>%
+  filter(pih.selfreport == 1) %>%
+  lm(systolic.mean ~ t.allele.num + age.at.entry.5yrs + bmi + as.factor(smoking) + bp.med, 
+         data = .)
+
+lmtest::lrtest(m_sbp_pih_rec, m_sbp_pih_cod)
+lmtest::lrtest(m_sbp_pih_add, m_sbp_pih_cod)
+@
+
+
+\end{document}
