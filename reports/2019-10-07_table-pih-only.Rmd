@@ -1,0 +1,293 @@
+---
+title: "Table 2"
+author: "Suzanne Dufault"
+date: "10/7/2019"
+output:
+  word_document
+#   word_document: default
+#   pdf_document: default
+# editor_options:
+#   chunk_output_type: console
+# header-includes:
+#   - \usepackage{booktabs}
+#   - \usepackage{longtable}
+#   - \usepackage{array}
+#   - \usepackage{multirow}
+#   - \usepackage{wrapfig}
+#   - \usepackage{float}
+#   - \usepackage{colortbl}
+#   - \usepackage{pdflscape}
+#   - \usepackage{tabu}
+#   - \usepackage{threeparttable}
+#   - \usepackage{threeparttablex}
+#   - \usepackage[normalem]{ulem}
+#   - \usepackage{makecell}
+#   - \usepackage{xcolor}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, 
+                      message = FALSE,
+                      warning = FALSE)
+```
+
+## Data
+
+```{r echo = FALSE}
+library(knitr)
+library(kableExtra)
+
+library(here)
+source(here("reports", "lib.R"))
+
+dta <- dta %>%
+  mutate(bc.OUTCOME = bc.registry,
+         ethnicity = case_when(ethnicity == "White" ~ "white",
+                               TRUE ~ "nonwhite"))
+
+dta.i <- dta.i %>%
+  mutate(bc.OUTCOME = bc.registry,
+         ethnicity = case_when(ethnicity == "White" ~ "white",
+                               TRUE ~ "nonwhite"))
+
+dta.is <- dta.is %>%
+  mutate(bc.OUTCOME = bc.registry,
+         ethnicity = case_when(ethnicity == "White" ~ "white",
+                               TRUE ~ "nonwhite"))
+
+dta1 <- dta1 %>%
+  mutate(bc.OUTCOME = bc.registry,
+         ethnicity = case_when(ethnicity == "White" ~ "white",
+                               TRUE ~ "nonwhite"))
+dta2 <- dta2 %>%
+  mutate(bc.OUTCOME = bc.registry,
+         ethnicity = case_when(ethnicity == "White" ~ "white",
+                               TRUE ~ "nonwhite"))
+dta3 <- dta3 %>%
+  mutate(bc.OUTCOME = bc.registry,
+         ethnicity = case_when(ethnicity == "White" ~ "white",
+                               TRUE ~ "nonwhite"))
+dta4 <- dta4 %>%
+  mutate(bc.OUTCOME = bc.registry,
+         ethnicity = case_when(ethnicity == "White" ~ "white",
+                               TRUE ~ "nonwhite"))
+dta5 <- dta5 %>%
+  mutate(bc.OUTCOME = bc.registry,
+         ethnicity = case_when(ethnicity == "White" ~ "white",
+                               TRUE ~ "nonwhite"))
+
+dta_cv <- dta %>% select(eid, year_of_birth_f34_0_0, bmi, smoking, art.stiff.ind, heart.attack.angina.stroke, 
+                         high.blood.pressure, diastolic.mean, systolic.mean, bp.med, cv.icd, genotype2016347, genotype2684788,
+                         pih.selfreport, t.allele.bin, t.allele.num, hypertension_dx)
+dta_cv <- dta_cv %>% mutate(age.at.entry.5yrs = (2006 - year_of_birth_f34_0_0)/5)
+dta_cv$smoking <- factor(dta_cv$smoking, ordered = FALSE)
+dta_cv$smoking <- relevel(dta_cv$smoking, ref = "Never")
+```
+
+# Models
+
+```{r all-nbns, echo = FALSE, cache = TRUE}
+## ALL NON-BREAST NON SKIN
+# Set follow-up time
+dta.i <- dta.i %>% 
+  group_by(eid) %>% 
+  mutate(T.eof.allnbns = ifelse(all.non.breast.non.skin.diag == 1, 
+                                as.numeric(format(all.non.breast.non.skin.diag.date, "%Y")) - year_of_birth_f34_0_0, 
+                                        ifelse(!is.na(date_death), as.numeric(format(date_death, "%Y")) - year_of_birth_f34_0_0, 
+                                               2015 - year_of_birth_f34_0_0)))
+dta.i.allnbns <- dta.i %>% filter(T.eof.allnbns > agefirstbirth)
+
+dta1.allnbns <- dta.i.allnbns %>% filter(.imp == 1) 
+dta2.allnbns <- dta.i.allnbns %>% filter(.imp == 2)
+dta3.allnbns <- dta.i.allnbns %>% filter(.imp == 3)
+dta4.allnbns <- dta.i.allnbns %>% filter(.imp == 4)
+dta5.allnbns <- dta.i.allnbns %>% filter(.imp == 5)
+
+# Survival objects
+s1.allnbns <- with(dta1.allnbns, Surv(time = agefirstbirth, time2 = T.eof.allnbns, event = all.non.breast.non.skin.diag))
+s2.allnbns <- with(dta2.allnbns, Surv(time = agefirstbirth, time2 = T.eof.allnbns, event = all.non.breast.non.skin.diag))
+s3.allnbns <- with(dta3.allnbns, Surv(time = agefirstbirth, time2 = T.eof.allnbns, event = all.non.breast.non.skin.diag))
+s4.allnbns <- with(dta4.allnbns, Surv(time = agefirstbirth, time2 = T.eof.allnbns, event = all.non.breast.non.skin.diag))
+s5.allnbns <- with(dta5.allnbns, Surv(time = agefirstbirth, time2 = T.eof.allnbns, event = all.non.breast.non.skin.diag))
+
+# Models
+m1 <- coxph(s1.allnbns ~ pih.selfreport + year_of_birth_cat + bmi5pt + smoking + agefirstbirth5yr, data = dta1.allnbns, ties = "efron" )
+m2 <- coxph(s2.allnbns ~ pih.selfreport + year_of_birth_cat + bmi5pt + smoking + agefirstbirth5yr, data = dta2.allnbns, ties = "efron" )
+m3 <- coxph(s3.allnbns ~ pih.selfreport + year_of_birth_cat + bmi5pt + smoking + agefirstbirth5yr, data = dta3.allnbns, ties = "efron" )
+m4 <- coxph(s4.allnbns ~ pih.selfreport + year_of_birth_cat + bmi5pt + smoking + agefirstbirth5yr, data = dta4.allnbns, ties = "efron" )
+m5 <- coxph(s5.allnbns ~ pih.selfreport + year_of_birth_cat + bmi5pt + smoking + agefirstbirth5yr, data = dta5.allnbns, ties = "efron" )
+
+fit <- list(m1, m2, m3, m4, m5)
+mods <- summary(pool(fit, dfcom = 206543))
+
+sum_allnbns <- dta.i.allnbns %>%
+  filter(all.non.breast.non.skin.diag == 1) %>%
+  group_by(pih.selfreport) %>%
+  summarize(n = n_distinct(eid)) %>%
+  mutate(pih.selfreport = case_when(pih.selfreport == 0 ~ "HDP-",
+                                    pih.selfreport == 1 ~ "HDP+"))
+  
+#
+all.nbns <- data.frame(type = "allnbns",
+                       HR = exp(mods$estimate[1]),
+                       CI.l = exp(mods$estimate - 1.96*mods$std.error)[1],
+                       CI.u = exp(mods$estimate + 1.96*mods$std.error)[1],
+                       p.val = mods$p.value[1])
+```
+
+```{r breast-cancer, echo = FALSE, cache = TRUE}
+## ALL BREAST CANCERS
+# Survival objects
+s1 <- with(dta1, Surv(time = agefirstbirth, time2 = T.eof, event = bc.OUTCOME))
+s2 <- with(dta2, Surv(time = agefirstbirth, time2 = T.eof, event = bc.OUTCOME))
+s3 <- with(dta3, Surv(time = agefirstbirth, time2 = T.eof, event = bc.OUTCOME))
+s4 <- with(dta4, Surv(time = agefirstbirth, time2 = T.eof, event = bc.OUTCOME))
+s5 <- with(dta5, Surv(time = agefirstbirth, time2 = T.eof, event = bc.OUTCOME))
+
+# Models
+m1 <- coxph(s1 ~ pih.selfreport + agefirstbirth5yr + year_of_birth_cat + parity + bmi5pt + as.factor(familyhx != "neither") + ethnicity, data = dta1, ties = "efron" )
+m2 <- coxph(s2 ~ pih.selfreport + agefirstbirth5yr + year_of_birth_cat + parity + bmi5pt + as.factor(familyhx != "neither") + ethnicity, data = dta2, ties = "efron" )
+m3 <- coxph(s3 ~ pih.selfreport + agefirstbirth5yr + year_of_birth_cat + parity + bmi5pt + as.factor(familyhx != "neither") + ethnicity, data = dta3, ties = "efron" )
+m4 <- coxph(s4 ~ pih.selfreport + agefirstbirth5yr + year_of_birth_cat + parity + bmi5pt + as.factor(familyhx != "neither") + ethnicity, data = dta4, ties = "efron" )
+m5 <- coxph(s5 ~ pih.selfreport + agefirstbirth5yr + year_of_birth_cat + parity + bmi5pt + as.factor(familyhx != "neither") + ethnicity, data = dta5, ties = "efron" )
+
+fit <- list(m1, m2, m3, m4, m5)
+mods <- summary(pool(fit, dfcom = 206543))
+
+sum_bc <- dta.i %>%
+  filter(bc.OUTCOME == 1) %>%
+  group_by(pih.selfreport) %>%
+  summarize(n = n_distinct(eid)) %>%
+  mutate(pih.selfreport = case_when(pih.selfreport == 0 ~ "HDP-",
+                                    pih.selfreport == 1 ~ "HDP+"))
+# 
+bc.mod <- data.frame(type = "bc",
+                     HR = exp(mods$estimate[1]),
+                     CI.l = exp(mods$estimate - 1.96*mods$std.error)[1],
+                     CI.u = exp(mods$estimate + 1.96*mods$std.error)[1],
+                     p.val = mods$p.value[1])
+```
+
+```{r cvd-diag, echo = FALSE}
+m6 <- dta_cv %>%
+  glm(cv.icd ~ pih.selfreport + age.at.entry.5yrs + bmi + as.factor(smoking), 
+      data = ., 
+      family = binomial(link = "logit"))
+
+sum_cvd <- dta %>%
+  filter(cv.icd == 1) %>%
+  group_by(pih.selfreport) %>%
+  summarize(n = n_distinct(eid)) %>%
+  mutate(pih.selfreport = case_when(pih.selfreport == 0 ~ "HDP-",
+                                    pih.selfreport == 1 ~ "HDP+"))
+
+# cvd model
+cvd.mod <- data.frame(type = "cvd",
+                      HR = exp(summary(m6)$coefficients["pih.selfreport",1]),
+                      CI.l = exp(confint.default(m6))["pih.selfreport",1],
+                      CI.u = exp(confint.default(m6))["pih.selfreport",2],
+                      p.val = summary(m6)$coefficients["pih.selfreport", "Pr(>|z|)"])
+```
+
+```{r hypertension, echo = FALSE}
+mod_htn <- dta_cv %>%
+  glm(hypertension_dx ~ pih.selfreport + age.at.entry.5yrs + bmi + as.factor(smoking), 
+      data = ., 
+      family = binomial(link = "logit"))
+
+sum_htn <- dta %>%
+  filter(hypertension_dx == 1) %>%
+  group_by(pih.selfreport) %>%
+  summarize(n = n_distinct(eid)) %>%
+  mutate(pih.selfreport = case_when(pih.selfreport == 0 ~ "HDP-",
+                                    pih.selfreport == 1 ~ "HDP+"))
+
+htn.mod <- data.frame(type = "hypertension", 
+                      HR = exp(summary(mod_htn)$coefficients["pih.selfreport",1]),
+                      CI.l = exp(confint.default(mod_htn))["pih.selfreport", 1],
+                      CI.u = exp(confint.default(mod_htn))["pih.selfreport", 2],
+                      p.val = summary(mod_htn)$coefficients["pih.selfreport", "Pr(>|z|)"])
+```
+
+```{r diasbp, echo = FALSE}
+m_dbp <- lm(diastolic.mean ~ pih.selfreport + age.at.entry.5yrs + bmi + as.factor(smoking) + bp.med, 
+         data = dta_cv)
+
+m_sbp <- lm(systolic.mean ~ pih.selfreport + age.at.entry.5yrs + bmi + as.factor(smoking) + bp.med, 
+         data = dta_cv)
+
+sum_sbp <- dta_cv %>%
+  mutate(above.median.sbp = systolic.mean > median(systolic.mean, na.rm = TRUE)) %>%
+  filter(above.median.sbp == 1) %>%
+  group_by(pih.selfreport) %>%
+  summarize(n = n_distinct(eid)) %>%
+  mutate(pih.selfreport = case_when(pih.selfreport == 0 ~ "HDP-",
+                                    pih.selfreport == 1 ~ "HDP+"))
+
+sum_dbp <- dta_cv %>%
+  mutate(above.median.dbp = diastolic.mean > median(diastolic.mean, na.rm = TRUE)) %>%
+  filter(above.median.dbp == 1) %>%
+  group_by(pih.selfreport) %>%
+  summarize(n = n_distinct(eid)) %>%
+  mutate(pih.selfreport = case_when(pih.selfreport == 0 ~ "HDP-",
+                                    pih.selfreport == 1 ~ "HDP+"))
+
+bp_mod <- data.frame(type = c("sysbp", "diasbp"),
+                     HR = c(summary(m_sbp)$coefficients["pih.selfreport",1],
+                            summary(m_dbp)$coefficients["pih.selfreport",1]),
+                     CI.l = c(confint.default(m_sbp)["pih.selfreport",1], 
+                              confint.default(m_dbp)["pih.selfreport",1]),
+                     CI.u = c(confint.default(m_sbp)["pih.selfreport",2], 
+                              confint.default(m_dbp)["pih.selfreport",2]),
+                     p.val = c(summary(m_sbp)$coefficients["pih.selfreport","Pr(>|t|)"],
+                               summary(m_dbp)$coefficients["pih.selfreport","Pr(>|t|)"]))
+```
+
+# Combine Output
+
+```{r echo = FALSE}
+output <- bind_rows(all.nbns, bc.mod, cvd.mod, htn.mod, bp_mod)
+
+summaries <- bind_rows(data.frame(sum_allnbns, type = "allnbns"), 
+                       data.frame(sum_bc, type = "bc"), 
+                       data.frame(sum_cvd, type = "cvd"), 
+                       data.frame(sum_htn, type = "hypertension"),
+                       data.frame(sum_sbp, type = "sysbp"),
+                       data.frame(sum_dbp, type = "diasbp")) %>%
+  pivot_wider(names_from = pih.selfreport, values_from = n)
+
+#format(round(x, 2), nsmall = 2)
+output <- full_join(summaries, output, by = "type")
+
+output %>%
+  mutate(Outcome = case_when(type == "allnbns" ~ "Non-breast cancers",
+                          type == "bc" ~ "Breast cancer",
+                          type == "cvd" ~ "Hospital CVD Diagnosis",
+                          type == "hypertension" ~ "Hospital HTN Diagnosis",
+                          type == "sysbp" ~ "Systolic Blood Pressure",
+                          type == "diasbp" ~ "Diastolic Blood Pressure"),
+         `M.o.A. (95% CI)` = paste0(format(round(HR, 2),nsmall = 2), " (", 
+                           format(round(CI.l,2),nsmall = 2), ", ",
+                           format(round(CI.u,2),nsmall = 2), ")"),
+         `p-value` = format(round(p.val,3),nsmall = 3)) %>%
+  mutate(`p-value` = case_when(`p-value` < 0.001 ~ "<0.001",
+                               TRUE ~ `p-value`)) %>%
+  select(Outcome, `HDP+`, `HDP-`, `M.o.A. (95% CI)`, `p-value`) %>%
+  kable(caption = "Outcomes for HDP+ compared to HDP- Participants") %>%
+  kable_styling() %>%
+  footnote(#general = "Here is a general comments of the table. ",
+           symbol = c("Hazard ratio adjusted for birth year, BMI, smoking status, and age at first birth;", 
+                      "Hazard ratio adjusted for birth year, BMI, age at first birth, ethnicity, and family history;", 
+                      "Odds ratio adjusted for age at time of study, BMI, and smoking status;",
+                      "Odds ratio adjusted for age at time of study, BMI, and smoking status;",
+                      "Additive change adjusted for age at time of study, BMI, smoking status, and current use of blood pressure medication;",
+                      "Additive change adjusted for age at time of study, BMI, smoking status, and current use of blood pressure medication."),
+           alphabet = c("Those with blood pressure above the median messured value;")
+           # alphabet = c("Footnote A; ", "Footnote B; "),
+           # symbol = c("Footnote Symbol 1; ", "Footnote Symbol 2"))
+  )
+
+```
+
+
+
