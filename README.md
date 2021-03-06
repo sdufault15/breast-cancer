@@ -18,6 +18,8 @@ This repository adopted/modified the formatting used by the `ProjectTemplate` pa
 + **docs** contains pdf/html versions of the reports generated in **reports**.
     + `2020-02-05_inclusion-exclusion-sample-size.html` contains sample size information and *Table 1. Characteristics of Study Participants by HDP Status*
     + `2019-10-07_table-genotype-interaction.pdf` contains the estimated values for *Table 2. Association of IGF1R SNP rs2016347 Genotype With Study Outcomes*
+    + `2019-10-20_forest-plot-pih-only-hrs.png` and `2019-10-20_forest-plot-pih-only-hrs.png` contain the estimated values for *Figure 1.* 
+    + `2019-10-01_genotype-stratified.pdf` contains the estimated values for *Figure 2.*
 
 + **reports** contains the raw code to generate the tables, figures and documents in **docs**
 
