@@ -1,0 +1,325 @@
+---
+title: "Participant Inclusion/Exclusion"
+author: "Suzanne Dufault"
+date: "2/5/2020"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE,
+                      warning = FALSE,
+                      message = FALSE)
+library(here)
+source(here("munge","lib.R"))
+library(knitr)
+library(kableExtra)
+```
+
+
+```{r}
+# MUST HAVE HARD DRIVE TO RUN THIS FILE
+ukb_key <- ukb_df_field("ukb22626", path = "/Volumes/Seagate Backup Plus Drive/BiobankData")
+
+load("/Volumes/Seagate Backup Plus Drive/BiobankData/my_ukb_data.rda")
+
+######
+# Starting working dataset
+######
+
+work_dta <- ukb_dta %>% select_at(vars(c(eid, year_of_birth_f34_0_0, month_of_birthuses_datacoding_8_f52_0_0, 
+                                         starts_with("body_mass_index_bmi_f21001"),
+                                         starts_with("age_at_first_live_birthuses_datacoding_100586_f2754"),
+                                         starts_with("age_at_last_live_birthuses_datacoding_100586_f2764"),
+                                         starts_with("age_when_periods_started_menarcheuses_datacoding_100291_f2714"),
+                                         starts_with("number_of_live_birthsuses_datacoding_100584_f2734"),
+                                         starts_with("qualificationsuses_datacoding_100305_f6138"),
+                                         starts_with("illnesses_of_motheruses_datacoding_1010_f20110"),
+                                         starts_with("illnesses_of_siblingsuses_datacoding_1010_f20111"),
+                                         starts_with("alcohol_intake_frequencyuses_datacoding_100402_f1558"),
+                                         starts_with("alcohol_intake_versus_10_years_previouslyuses_datacoding_100417_f1628"),
+                                         starts_with("number_of_daysweek_of_moderate_physical_activity_10_minutesuses_datacoding_100291_f884"), 
+                                         starts_with("number_of_daysweek_of_vigorous_physical_activity_10_minutesuses_datacoding_100291_f904"),
+                                         starts_with("pack_years_of_smoking_f20161"),
+                                         starts_with("smoking_statususes_datacoding_90_f20116"),
+                                         starts_with("ethnic_backgrounduses_datacoding_1001_f21000"),
+                                         starts_with("date_of_death_f40000"))))
+
+####
+# COVARIATES
+####
+
+bmi <- work_dta %>% select_at(vars(c(eid, starts_with("body_mass_index_bmi_f21001"))))
+bmi$bmi <- apply(bmi[,2:4],1,function(x){mean(as.numeric(x), na.rm = TRUE)})
+
+agefirstbirth <- work_dta %>% select_at(vars(c(eid, starts_with("age_at_first_live_birthuses_datacoding_100586_f2754")))) 
+agefirstbirth$agefirstbirth <- apply(agefirstbirth[,2:4], 1, function(x){min(x, na.rm = TRUE)})
+
+agelastbirth <- work_dta %>% select_at(vars(c(eid, starts_with("age_at_last_live_birthuses_datacoding_100586_f2764")))) 
+agelastbirth$agelastbirth <- apply(agelastbirth[,2:4], 1, function(x){max(x, na.rm = TRUE)})
+
+agemenarche <- work_dta %>% select_at(vars(c(eid, starts_with("age_when_periods_started_menarcheuses_datacoding_100291_f2714"))))
+agemenarche$agemenarche <- apply(agemenarche[,2:4], 1, function(x){min(x, na.rm = TRUE)})
+agemenarche$agemenarche[agemenarche$agemenarche == -1] <- "Do not know"
+agemenarche$agemenarche[agemenarche$agemenarche == -3] <- "Prefer not to answer"
+
+numberlivebirths <- work_dta %>% select_at(vars(c(eid, starts_with("number_of_live_birthsuses_datacoding_100584_f2734"))))
+numberlivebirths$parity <- apply(numberlivebirths[,2:4], 1, function(x){max(x, na.rm = TRUE)})
+
+college <- work_dta %>% filter_at(vars(starts_with("qualificationsuses_datacoding_100305_f6138")), any_vars(. %in% c("College or University degree", "Other professional qualifications eg: nursing, teaching")))
+lowerlevel <- work_dta %>% filter_at(vars(starts_with("qualificationsuses_datacoding_100305_f6138")), any_vars(. %in% c("A levels/AS levels or equivalent", "O levels/GSCEs or equivalent", "CSEs or equivalent", "NVQ or HND or HNC or equivalent")))
+#mean(unique(college$eid) %in% unique(lowerlevel$eid)) # 49% of women report both degrees
+# Coding in this order results in women with a college degree and a lowerlevel degree being recorded as "College or University".
+work_dta <- work_dta %>% mutate(education = ifelse(work_dta$eid %in% lowerlevel$eid, "Lower level", 
+                                                   ifelse(work_dta$eid %in% college$eid, "College or University", "Other"))) # other includes "none of the above" and "prefer not to answer"    
+
+familyhistory <- work_dta %>% select_at(vars(c(eid, starts_with("illnesses_of_motheruses_datacoding_1010_f20110"), starts_with("illnesses_of_siblingsuses_datacoding_1010_f20111"))))
+hxmother <- familyhistory %>% filter_at(vars(starts_with('illnesses_of_motheruses')), any_vars(. %in% c("Breast cancer")))
+hxsib <- familyhistory %>% filter_at(vars(starts_with('illnesses_of_siblingsuses')), any_vars(. %in% c("Breast cancer")))
+familyhistory <- familyhistory %>% mutate(hxmother = ifelse(eid %in% hxmother$eid, 1, 0), hxsib = ifelse(eid %in% hxsib$eid, 1, 0))
+
+alcohol <- work_dta %>% select_at(vars(c(eid, starts_with("alcohol_intake_frequencyuses_datacoding_100402")))) 
+#alcohol %>% filter(eid %in% eid[which(is.na(alcohol$alcohol_intake_frequencyuses_datacoding_100402_f1558_0_0))])
+alcohol$alcohol <- alcohol$alcohol_intake_frequencyuses_datacoding_100402_f1558_0_0
+alcohol$alcohol[alcohol$eid == 1524068] <- alcohol$alcohol_intake_frequencyuses_datacoding_100402_f1558_1_0[alcohol$eid== 1524068]
+alcohol$alcohol[is.na(alcohol$alcohol)] <- alcohol$alcohol_intake_frequencyuses_datacoding_100402_f1558_2_0[is.na(alcohol$alcohol)]
+
+exercise <- work_dta %>% select_at(vars(c(eid, starts_with("number_of_daysweek_of_moderate_physical_activity_10_minutesuses_datacoding_100291_f884"), 
+                                          starts_with("number_of_daysweek_of_vigorous_physical_activity_10_minutesuses_datacoding_100291_f904"))))
+exercise$exercise <- apply(exercise[,2:7], 1, function(x){max(x, na.rm = TRUE)})
+
+smoking <- work_dta %>% select_at(vars(c(eid, starts_with("smoking_statususes_datacoding_90_f20116"))))
+#smoking %>% filter(eid %in% eid[which(is.na(smoking$smoking_statususes_datacoding_90_f20116_0_0))])
+smoking$smoking <- smoking$smoking_statususes_datacoding_90_f20116_0_0
+smoking$smoking[smoking$eid == 1524068] <- smoking$smoking_statususes_datacoding_90_f20116_1_0[smoking$eid== 1524068]
+smoking$smoking[is.na(alcohol$alcohol)] <- smoking$smoking_statususes_datacoding_90_f20116_2_0[is.na(smoking$smoking)]
+
+
+datedeath <- work_dta %>% select_at(vars(c(eid, starts_with("date_of_death_f40000"))))
+datedeath$date_death <- datedeath$date_of_death_f40000_0_0 # there are no additional dates that are solely recorded in the 1_0 or 2_0 columns
+
+
+work_dta <- work_dta %>% mutate(ethnicity = 
+                                  ifelse(ethnic_backgrounduses_datacoding_1001_f21000_0_0 %in% c("White", "British", "Irish", "Any other white background"), "White",
+                                         ifelse(ethnic_backgrounduses_datacoding_1001_f21000_0_0 %in% c("White and Black Caribbean", "White and Black African", "African", "Any other Black background", "Black or Black British"), "Black",
+                                                ifelse(ethnic_backgrounduses_datacoding_1001_f21000_0_0 %in% c("Indian", "Pakistani", "Bangladeshi"), "Indian/Pakistani",
+                                                       ifelse(ethnic_backgrounduses_datacoding_1001_f21000_0_0 %in% c("Mixed", "Any other mixed background", "Caribbean"), "Mixed",
+                                                              ifelse(ethnic_backgrounduses_datacoding_1001_f21000_0_0 %in% c("Chinese", "White and Asian", "Any other Asian background", "Asian or Asian British"), "Asian/Chinese",
+                                                                     ifelse(is.na(ethnic_backgrounduses_datacoding_1001_f21000_0_0) & ethnic_backgrounduses_datacoding_1001_f21000_2_0 %in% c("White", "British", "Irish", "Any other white background"), "White", 
+                                                                            ifelse(ethnic_backgrounduses_datacoding_1001_f21000_0_0 %in% c("Other ethnic group"), "Other", 
+                                                                                   ifelse(ethnic_backgrounduses_datacoding_1001_f21000_0_0 %in% c("Prefer not to answer", "Do not know"), "Not reported", NA))))))))) 
+
+work_dta_full <- work_dta %>% select(eid, year_of_birth_f34_0_0, month_of_birthuses_datacoding_8_f52_0_0, education, ethnicity)
+work_dta_full <- full_join(full_join(full_join(full_join(full_join(full_join(full_join(full_join(full_join(full_join(work_dta_full, agefirstbirth[c("eid", "agefirstbirth")], "eid"), 
+                                                                                                 bmi[c("eid", "bmi")], "eid"),
+                                                                                       agelastbirth[c("eid", "agelastbirth")], "eid"), 
+                                                                             agemenarche[c("eid", "agemenarche")], "eid"), 
+                                                                   numberlivebirths[c("eid","parity")], "eid"),
+                                                         familyhistory[c("eid", "hxmother", "hxsib")], "eid"),
+                                               alcohol[c("eid", "alcohol")], "eid"),
+                                     exercise[c("eid", "exercise")], "eid"),
+                          smoking[c("eid", "smoking")], "eid"),
+                          datedeath[c("eid","date_death")], "eid")
+```
+
+In the original demographic dataset from UKBiobank (ukb22626), there is information on `r n_distinct(work_dta_full$eid)` women.
+
+# Exclusion Criteria {.tabset .tabset-fade}
+
+## 1. Removing based on parity
+
+```{r include = FALSE}
+head(work_dta_full) %>% 
+  dplyr::select(-eid) %>% 
+  kable(digits = 2,
+        caption = "A handful of rows from the dataset.") %>% 
+  kable_styling()
+
+work_dta_full <- work_dta_full %>% select(eid, year_of_birth_f34_0_0, month_of_birthuses_datacoding_8_f52_0_0, 
+                                          bmi, agefirstbirth, agelastbirth, agemenarche, parity, education, 
+                                          hxmother, hxsib, alcohol, exercise, smoking, ethnicity,
+                                          date_death)
+```
+
+We will only keep women who are parous and have no more than 5 children.
+
+
+```{r}
+work_dta_full %>% 
+  mutate(parity = as.numeric(parity)) %>% 
+  mutate(Parity = case_when(parity == -3 ~ "Missing information",
+                            between(parity, 0, 5) ~ as.character(parity),
+                            parity >= 6 ~ "6+")) %>% 
+  group_by(Parity) %>% 
+  summarize(n = n_distinct(eid)) %>% 
+  kable(caption = "Women will be excluded if they did not provide information on parity, if they did not have any children, or if they had 6 or more children.") %>% 
+  kable_styling()
+```
+
+```{r}
+# For those who prefer not to answer regarding parity, there is also 100% missiningness on age of first birth. It seems likely that these individuals did not have a live pregnancy.
+# We are also removing women with > 6 children
+ppna <- work_dta_full %>% filter(parity == -3) 
+#all(is.na(ppna$agefirstbirth))
+
+# Recoding
+work_dta_full$parity <- as.numeric(work_dta_full$parity)
+work_dta_full$year_of_birth_f34_0_0 <- as.numeric(work_dta_full$year_of_birth_f34_0_0)
+work_dta_full$agefirstbirth <- as.numeric(work_dta_full$agefirstbirth)
+work_dta_full$agelastbirth <- as.numeric(work_dta_full$agelastbirth)
+work_dta_full$agemenarche <- as.numeric(work_dta_full$agemenarche)
+
+work_dta_subset <- work_dta_full %>% filter(parity > 0 & parity < 6)
+```
+
+After excluding based on these conditions, **there are now `r n_distinct(work_dta_subset$eid)` women eligible for study.** 
+
+## 2. Removing based on genotype
+
+```{r}
+load(here("data","ukb_working_data_sub_n220116_exp_out_rs2016347.RData"))
+dta_long <- work_dta_subset_2016347 %>% 
+  select(eid, GG, GT, TT) %>% 
+  gather("genotype2016347", "probability", 2:4) %>% 
+  arrange(eid)
+dta_long <- dta_long %>% 
+  group_by(eid) %>% 
+  mutate(maxP = max(probability))
+dta_long <- dta_long %>% 
+  filter(probability == maxP)
+```
+
+There are `r n_distinct(setdiff(work_dta_subset$eid, dta_long$eid))` women in the demographic database who did not have corresponding genotype data in the genomic database. 
+
+Further, as we are using a threshold of 0.95 for classifying genotype probabilities, there are `r n_distinct(dta_long$eid[dta_long$probability < 0.95])` women who do not have genotype probabilities that meet this cutoff for any GG/GT/TT.
+
+```{r}
+dta_long <- dta_long %>% 
+  filter(probability >= 0.95) # assigning based on 0.95 cutoff
+
+dta_long <- left_join(dta_long, work_dta_subset,  by = "eid")
+```
+
+After excluding based on these conditions, **there are now `r n_distinct(dta_long$eid)` women eligible for study.** 
+
+
+## 3. Removing withdrawals
+
+```{r}
+withdraw <- read_csv(file = here("data", "w37368_20181016.csv"), 
+                     col_names = "eid", 
+                     col_types = 'c')
+
+withdrew <- dta_long %>% 
+  filter(eid %in% withdraw$eid) %>% 
+  ungroup() %>% 
+  summarize(n = n_distinct(eid)) %>% 
+  unlist
+```
+
+An additional `r withdrew` individuals withdrew from the study.
+
+```{r}
+dta_long <- dta_long %>% 
+  filter(!eid %in% withdraw$eid)
+```
+
+**This results in a final count of `r n_distinct(dta_long$eid)`.**
+
+## TABLE ONE - UPDATED
+
+```{r cache = TRUE}
+source(here("reports", "lib.R"))
+library(tableone)
+
+dta <- dta %>% 
+  filter(eid %in% dta_long$eid)
+
+dta_t1 <- dta %>%
+  mutate(age_2006 = 2006-year_of_birth_f34_0_0,
+         smoking_bin = case_when(smoking == "Previous" ~ "Previous/Current",
+                                 smoking == "Current" ~ "Previous/Current",
+                                 smoking == "Never" ~ "Never",
+                                 smoking == "Prefer not to answer" | is.na(smoking) ~ "Prefer not to answer"),
+         exercise_cat = case_when(exercise == -1 | exercise == -3 ~ "Not reported",
+                                  exercise <= 1 ~ "0-1 day",
+                                  exercise > 1 & exercise <= 4 ~ "2-4 days",
+                                  exercise >= 5 ~ "5+ days"),
+         alcohol_cat = case_when(alcohol == "Prefer not to answer" ~ "Prefer not to answer",
+                                 alcohol == "Daily or almost daily" ~ "5+ days/week",
+                                 alcohol == "Three or four times a week" |
+                                   alcohol == "Once or twice a week" ~ "1-4 days/week",
+                                 alcohol == "One to three times a month" |
+                                   alcohol == "Special occasions only" |
+                                 alcohol == "Never" ~ "less than once/week"),
+         education_cat = case_when(education == "College or University" ~ "College or University",
+                                   TRUE ~ "Other"),
+         fam_hx = case_when(hxmother == 1 | hxsib == 1 ~ 1,
+                            hxmother == 0 & hxsib == 0 ~ 0),
+         PIH = case_when(pih.selfreport == 1 ~ "PIH+",
+                         pih.selfreport == 0 ~ "PIH-")
+  )
+
+dta_t1$education_cat <- relevel(as.factor(dta_t1$education_cat), ref = "Other")
+
+###
+library(labelled)
+var_label(dta_t1$age_2006) <- "Age at entry"
+var_label(dta_t1$ethnicity) <- "Ethnicity"
+var_label(dta_t1$smoking_bin) <- "Smoking history"
+var_label(dta_t1$bmi) <- "BMI"
+var_label(dta_t1$education_cat) <- "Education"
+var_label(dta_t1$parity) <- "Parity"
+var_label(dta_t1$agefirstbirth) <- "Age at first birth"
+var_label(dta_t1$fam_hx) <- "Family history of breast cancer"
+var_label(dta_t1$alcohol_cat) <- "Alcohol intake"
+var_label(dta_t1$exercise_cat) <- "Exercise - days/week"
+var_label(dta_t1$genotype2016347) <- "rs2016347 genotype"
+
+###
+my_vars <- c("age_2006",
+          "ethnicity",
+          "smoking_bin",
+          "bmi",
+          "education_cat",
+          "parity",
+          "agefirstbirth",
+          "fam_hx",
+          "alcohol_cat",
+          "exercise_cat",
+          "genotype2016347")
+
+cat_vars <- c(#"age_2006",
+          "ethnicity",
+          "smoking_bin",
+          #"BMI",
+          "education_cat",
+          #"parity",
+          #"agefirstbirth",
+          "fam_hx",
+          "alcohol_cat",
+          "exercise_cat",
+          "genotype2016347")
+
+t1 <- CreateTableOne(vars = my_vars, 
+                     factorVars = cat_vars,
+                     data = dta_t1,
+                     strata = "PIH")
+t1_k <- kable(
+  digits = 2,
+  print(t1,
+        varLabels = TRUE,
+        printToggle = FALSE)#,
+  #booktabs = T,
+  #format = "latex"
+)
+
+t1_k %>% 
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed")) %>% 
+  pack_rows(group_label = "Ethnicity", start_row = 3, end_row = 10) %>% 
+  pack_rows(group_label = "Smoking History", start_row = 11, end_row = 14) %>% 
+  pack_rows(group_label = "Alcohol Intake", start_row = 20, end_row = 24) %>% 
+  pack_rows(group_label = "Exercise", start_row = 25, end_row = 29) %>% 
+  pack_rows(group_label = "rs2016347 genotype", start_row = 30, end_row = 33)
+```
