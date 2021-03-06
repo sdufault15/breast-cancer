@@ -1,0 +1,423 @@
+\documentclass{article}
+\usepackage{booktabs}
+\usepackage{threeparttable}
+\usepackage[margin = 0.75in]{geometry}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{wrapfig}
+\usepackage{float}
+\usepackage{colortbl}
+\usepackage{pdflscape}
+
+\begin{document}
+
+<<setup, echo=FALSE>>=
+knitr::opts_chunk$set(echo = TRUE, 
+                      message = FALSE,
+                      warning = FALSE)
+@
+
+<<echo = FALSE>>=
+library(knitr)
+library(kableExtra)
+library(epitools)
+library(here)
+source(here("reports", "lib.R"))
+
+dta <- dta %>%
+  mutate(bc.OUTCOME = bc.registry,
+         ethnicity = case_when(ethnicity == "White" ~ "white",
+                               TRUE ~ "nonwhite")) %>% 
+  filter(!is.na(genotype2016347))
+
+dta.i <- dta.i %>%
+  mutate(bc.OUTCOME = bc.registry,
+         ethnicity = case_when(ethnicity == "White" ~ "white",
+                               TRUE ~ "nonwhite")) %>% 
+  filter(!is.na(genotype2016347))
+
+dta.is <- dta.is %>%
+  mutate(bc.OUTCOME = bc.registry,
+         ethnicity = case_when(ethnicity == "White" ~ "white",
+                               TRUE ~ "nonwhite")) %>% 
+  filter(!is.na(genotype2016347))
+
+dta1 <- dta1 %>%
+  mutate(bc.OUTCOME = bc.registry,
+         ethnicity = case_when(ethnicity == "White" ~ "white",
+                               TRUE ~ "nonwhite")) %>% 
+  filter(!is.na(genotype2016347))
+
+dta2 <- dta2 %>%
+  mutate(bc.OUTCOME = bc.registry,
+         ethnicity = case_when(ethnicity == "White" ~ "white",
+                               TRUE ~ "nonwhite")) %>% 
+  filter(!is.na(genotype2016347))
+
+dta3 <- dta3 %>%
+  mutate(bc.OUTCOME = bc.registry,
+         ethnicity = case_when(ethnicity == "White" ~ "white",
+                               TRUE ~ "nonwhite"))%>% 
+  filter(!is.na(genotype2016347))
+
+dta4 <- dta4 %>%
+  mutate(bc.OUTCOME = bc.registry,
+         ethnicity = case_when(ethnicity == "White" ~ "white",
+                               TRUE ~ "nonwhite")) %>% 
+  filter(!is.na(genotype2016347))
+
+dta5 <- dta5 %>%
+  mutate(bc.OUTCOME = bc.registry,
+         ethnicity = case_when(ethnicity == "White" ~ "white",
+                               TRUE ~ "nonwhite")) %>% 
+  filter(!is.na(genotype2016347))
+
+
+dta_cv <- dta %>% 
+  select(eid, year_of_birth_f34_0_0, bmi, smoking, art.stiff.ind, heart.attack.angina.stroke, 
+         high.blood.pressure, diastolic.mean, systolic.mean, bp.med, cv.icd, genotype2016347, genotype2684788,
+         pih.selfreport, t.allele.bin, t.allele.num, hypertension_dx) %>% 
+  filter(!is.na(genotype2016347))
+
+dta_cv <- dta_cv %>% mutate(age.at.entry.5yrs = (2006 - year_of_birth_f34_0_0)/5)
+dta_cv$smoking <- factor(dta_cv$smoking, ordered = FALSE)
+dta_cv$smoking <- relevel(dta_cv$smoking, ref = "Never")
+@
+
+% \section{Models}
+
+<<echo = FALSE, cache = TRUE>>=
+## ALL NON-BREAST NON SKIN
+# Set follow-up time
+dta.i <- dta.i %>% 
+  group_by(eid) %>% 
+  mutate(T.eof.allnbns = ifelse(all.non.breast.non.skin.diag == 1, 
+                                as.numeric(format(all.non.breast.non.skin.diag.date, "%Y")) - year_of_birth_f34_0_0, 
+                                        ifelse(!is.na(date_death), as.numeric(format(date_death, "%Y")) - year_of_birth_f34_0_0, 
+                                               2015 - year_of_birth_f34_0_0))) %>% 
+  filter(!is.na(genotype2016347))
+
+dta.i.allnbns <- dta.i %>% filter(T.eof.allnbns > agefirstbirth)
+
+dta1.allnbns <- dta.i.allnbns %>% filter(.imp == 1) 
+dta2.allnbns <- dta.i.allnbns %>% filter(.imp == 2)
+dta3.allnbns <- dta.i.allnbns %>% filter(.imp == 3)
+dta4.allnbns <- dta.i.allnbns %>% filter(.imp == 4)
+dta5.allnbns <- dta.i.allnbns %>% filter(.imp == 5)
+
+# Survival objects
+s1.allnbns <- with(dta1.allnbns, Surv(time = agefirstbirth, time2 = T.eof.allnbns, event = all.non.breast.non.skin.diag))
+s2.allnbns <- with(dta2.allnbns, Surv(time = agefirstbirth, time2 = T.eof.allnbns, event = all.non.breast.non.skin.diag))
+s3.allnbns <- with(dta3.allnbns, Surv(time = agefirstbirth, time2 = T.eof.allnbns, event = all.non.breast.non.skin.diag))
+s4.allnbns <- with(dta4.allnbns, Surv(time = agefirstbirth, time2 = T.eof.allnbns, event = all.non.breast.non.skin.diag))
+s5.allnbns <- with(dta5.allnbns, Surv(time = agefirstbirth, time2 = T.eof.allnbns, event = all.non.breast.non.skin.diag))
+
+# Models
+m1 <- coxph(s1.allnbns ~ t.allele.bin, data = dta1.allnbns, ties = "efron" )
+m2 <- coxph(s2.allnbns ~ t.allele.bin, data = dta2.allnbns, ties = "efron" )
+m3 <- coxph(s3.allnbns ~ t.allele.bin, data = dta3.allnbns, ties = "efron" )
+m4 <- coxph(s4.allnbns ~ t.allele.bin, data = dta4.allnbns, ties = "efron" )
+m5 <- coxph(s5.allnbns ~ t.allele.bin, data = dta5.allnbns, ties = "efron" )
+
+fit <- list(m1, m2, m3, m4, m5)
+mods <- summary(pool(fit, dfcom = 206543))
+
+sum_allnbns <- 
+  dta.i.allnbns %>%
+  filter(#all.non.breast.non.skin.diag == 1,
+         !is.na(genotype2016347)) %>%
+  group_by(all.non.breast.non.skin.diag, genotype2016347) %>%
+  summarize(n = n_distinct(eid))  
+
+nbns_tab <- sum_allnbns %>%
+  ungroup() %>%
+  select(n) %>%
+  unlist() %>%
+  epitable(ncol = 2, byrow = FALSE)
+
+p_chi_allnbns <- chisq.test(nbns_tab)
+
+#
+all.nbns <- data.frame(type = "allnbns",
+                       HR = exp(mods$estimate),
+                       CI.l = exp(mods$estimate - 1.96*mods$std.error),
+                       CI.u = exp(mods$estimate + 1.96*mods$std.error),
+                       p.val = mods$p.value)
+@
+
+<<echo = FALSE, cache = TRUE>>=
+## ALL BREAST CANCERS
+# Survival objects
+s1 <- with(dta1, Surv(time = agefirstbirth, time2 = T.eof, event = bc.OUTCOME))
+s2 <- with(dta2, Surv(time = agefirstbirth, time2 = T.eof, event = bc.OUTCOME))
+s3 <- with(dta3, Surv(time = agefirstbirth, time2 = T.eof, event = bc.OUTCOME))
+s4 <- with(dta4, Surv(time = agefirstbirth, time2 = T.eof, event = bc.OUTCOME))
+s5 <- with(dta5, Surv(time = agefirstbirth, time2 = T.eof, event = bc.OUTCOME))
+
+# Models
+m1 <- coxph(s1 ~ t.allele.bin, data = dta1, ties = "efron" )
+m2 <- coxph(s2 ~ t.allele.bin, data = dta2, ties = "efron" )
+m3 <- coxph(s3 ~ t.allele.bin, data = dta3, ties = "efron" )
+m4 <- coxph(s4 ~ t.allele.bin, data = dta4, ties = "efron" )
+m5 <- coxph(s5 ~ t.allele.bin, data = dta5, ties = "efron" )
+
+fit <- list(m1, m2, m3, m4, m5)
+mods_bc <- summary(pool(fit, dfcom = 206543))
+
+sum_bc <- dta.i %>%
+  filter(!is.na(t.allele.bin)) %>%
+  group_by(bc.OUTCOME, genotype2016347) %>%
+  summarize(n = n_distinct(eid)) 
+
+bc_tab <- sum_bc %>%
+  ungroup() %>%
+  select(n) %>%
+  unlist() %>%
+  epitable(ncol = 2, byrow = FALSE)
+
+p_chi_bc <- chisq.test(bc_tab)
+
+bc.mod <- data.frame(type = "bc",
+                     HR = exp(mods_bc$estimate),
+                     CI.l = exp(mods_bc$estimate - 1.96*mods_bc$std.error),
+                     CI.u = exp(mods_bc$estimate + 1.96*mods_bc$std.error),
+                     p.val = mods_bc$p.value)
+@
+
+<<echo = FALSE>>=
+m6 <- dta_cv %>%
+  glm(cv.icd ~ t.allele.bin, 
+      data = ., 
+      family = binomial(link = "logit"))
+
+sum_cvd <- dta %>%
+  filter(!is.na(genotype2016347)) %>%
+  group_by(cv.icd, genotype2016347) %>%
+  summarize(n = n_distinct(eid)) 
+
+cvd_tab <- sum_cvd %>%
+  ungroup() %>%
+  select(n) %>%
+  unlist() %>%
+  epitable(ncol = 2, byrow = FALSE)
+
+p_chi_cvd <- chisq.test(cvd_tab)
+
+# cvd model
+cvd.mod <- data.frame(type = "cvd",
+                      HR = exp(summary(m6)$coefficients["t.allele.bin",1]),
+                      CI.l = exp(confint.default(m6))["t.allele.bin",1],
+                      CI.u = exp(confint.default(m6))["t.allele.bin",2],
+                      p.val = summary(m6)$coefficients["t.allele.bin", "Pr(>|z|)"])
+@
+
+<<echo = FALSE>>=
+mod_htn <- dta_cv %>%
+  glm(hypertension_dx ~ t.allele.bin, 
+      data = ., 
+      family = binomial(link = "logit"))
+
+sum_htn <- dta %>%
+  filter(!is.na(genotype2016347)) %>%
+  group_by(hypertension_dx, genotype2016347) %>%
+  summarize(n = n_distinct(eid)) 
+
+htn_tab <- sum_htn %>%
+  ungroup() %>%
+  select(n) %>%
+  unlist() %>%
+  epitable(ncol = 2, byrow = FALSE)
+
+p_chi_htn <- chisq.test(htn_tab)
+
+htn.mod <- data.frame(type = "hypertension", 
+                      HR = exp(summary(mod_htn)$coefficients["t.allele.bin",1]),
+                      CI.l = exp(confint.default(mod_htn))["t.allele.bin", 1],
+                      CI.u = exp(confint.default(mod_htn))["t.allele.bin", 2],
+                      p.val = summary(mod_htn)$coefficients["t.allele.bin", "Pr(>|z|)"])
+@
+
+<<echo = FALSE>>=
+m_dbp <- lm(diastolic.mean ~ t.allele.bin, data = dta_cv)
+m_sbp <- lm(systolic.mean ~ t.allele.bin, data = dta_cv)
+
+sum_sbp <- dta_cv %>%
+  mutate(above.median.sbp = systolic.mean > median(systolic.mean, na.rm = TRUE)) %>%
+  filter(!is.na(genotype2016347),
+         !is.na(above.median.sbp)) %>%
+  group_by(above.median.sbp, genotype2016347) %>%
+  summarize(n = n_distinct(eid)) 
+
+sum_dbp <- dta_cv %>%
+  mutate(above.median.dbp = diastolic.mean > median(diastolic.mean, na.rm = TRUE)) %>%
+  filter(!is.na(genotype2016347),
+         !is.na(above.median.dbp)) %>%
+  group_by(above.median.dbp, genotype2016347) %>%
+  summarize(n = n_distinct(eid)) 
+
+sbp_tab <- sum_sbp %>%
+  ungroup() %>%
+  select(n) %>%
+  unlist() %>%
+  epitable(ncol = 2, byrow = FALSE)
+
+p_chi_sbp <- chisq.test(sbp_tab)
+
+dbp_tab <- sum_dbp %>%
+  ungroup() %>%
+  select(n) %>%
+  unlist() %>%
+  epitable(ncol = 2, byrow = FALSE)
+
+p_chi_dbp<- chisq.test(dbp_tab)
+
+bp_mod <- data.frame(type = c("sysbp", "diasbp"),
+                     HR = c(summary(m_sbp)$coefficients["t.allele.bin",1],
+                            summary(m_dbp)$coefficients["t.allele.bin",1]),
+                     CI.l = c(confint.default(m_sbp)["t.allele.bin",1], 
+                              confint.default(m_dbp)["t.allele.bin",1]),
+                     CI.u = c(confint.default(m_sbp)["t.allele.bin",2], 
+                              confint.default(m_dbp)["t.allele.bin",2]),
+                     p.val = c(summary(m_sbp)$coefficients["t.allele.bin","Pr(>|t|)"],
+                               summary(m_dbp)$coefficients["t.allele.bin","Pr(>|t|)"]))
+@
+
+% \section{Combine Output}
+\setcounter{table}{1}
+
+<<echo = FALSE, results = 'asis'>>=
+output <- bind_rows(all.nbns, bc.mod, cvd.mod, htn.mod, bp_mod)
+
+s1 <- sum_allnbns %>%
+  group_by(genotype2016347) %>%
+  mutate(perc = n/sum(n)) %>%
+  filter(all.non.breast.non.skin.diag == 1) %>%
+  select(genotype2016347, n, perc) %>%
+  ungroup() %>% 
+  mutate(N = sum(n))
+
+s2 <- sum_bc %>%
+  group_by(genotype2016347) %>%
+  mutate(perc = n/sum(n)) %>%
+  filter(bc.OUTCOME == 1) %>%
+  select(genotype2016347, n, perc) %>%
+  ungroup() %>% 
+  mutate(N = sum(n))
+
+s3 <- sum_cvd %>%
+  group_by(genotype2016347) %>%
+  mutate(perc = n/sum(n)) %>%
+  filter(cv.icd == 1) %>%
+  select(genotype2016347, n, perc) %>%
+  ungroup() %>% 
+  mutate(N = sum(n))
+
+s4 <- sum_htn %>%
+  group_by(genotype2016347) %>%
+  mutate(perc = n/sum(n)) %>%
+  filter(hypertension_dx == 1) %>%
+  select(genotype2016347, n, perc) %>%
+  ungroup() %>% 
+  mutate(N = sum(n))
+
+s5 <- dta_cv %>%
+  group_by(genotype2016347) %>%
+  summarise(n = sum(!is.na(systolic.mean))) %>% 
+  ungroup() %>% 
+  mutate(N = sum(n))
+
+s5b <- dta_cv %>% 
+  group_by(genotype2016347) %>% 
+  summarize(mean.bp = mean(systolic.mean, na.rm = TRUE))
+
+s5 <- full_join(s5, s5b) %>% 
+  # to match other formatting
+  dplyr::select(genotype2016347, n, perc = mean.bp, N)
+
+s6 <- dta_cv %>%
+  group_by(genotype2016347) %>%
+  summarise(n = sum(!is.na(diastolic.mean))) %>% 
+  ungroup() %>% 
+  mutate(N = sum(n))
+
+s6b <- dta_cv %>% 
+  group_by(genotype2016347) %>% 
+  summarize(mean.bp = mean(diastolic.mean, na.rm = TRUE))
+
+s6 <- full_join(s6, s6b) %>% 
+  # to match other formatting
+  dplyr::select(genotype2016347, n, perc = mean.bp, N)
+
+summaries <- bind_rows(data.frame(s1, type = "allnbns"), 
+                       data.frame(s2, type = "bc"), 
+                       data.frame(s3, type = "cvd"), 
+                       data.frame(s4, type = "hypertension"),
+                       data.frame(s5, type = "sysbp"),
+                       data.frame(s6, type = "diasbp")) %>%
+  pivot_wider(names_from = genotype2016347, values_from = c(n, perc)) 
+
+summaries <- data.frame(summaries, chi_sq_p = c(p_chi_allnbns$p.value,
+                                                p_chi_bc$p.value,
+                                                p_chi_cvd$p.value,
+                                                p_chi_htn$p.value,
+                                                p_chi_sbp$p.value,
+                                                p_chi_dbp$p.value))
+
+#format(round(x, 2), nsmall = 2)
+output <- full_join(summaries, output, by = "type")
+
+output %>%
+  mutate(Outcome = case_when(type == "allnbns" ~ paste0("Non-breast cancers", " (n=",N,")"), 
+                          type == "bc" ~ paste0("Breast cancer", " (n=",N,")"), 
+                          type == "cvd" ~ paste0("Hospital CVD Diagnosis"," (n=",N,")"), 
+                          type == "hypertension" ~ paste0("Hospital HTN Diagnosis", " (n=",N,")"), 
+                          type == "sysbp" ~ paste0("Systolic Blood Pressure", " (n=",N,")"), 
+                          type == "diasbp" ~ paste0("Diastolic Blood Pressure", " (n=",N,")")), 
+         GG = ifelse(type %in% c("allnbns", "bc", "cvd", "hypertension"), perc_GG*100, perc_GG),
+         GT = ifelse(type %in% c("allnbns", "bc", "cvd", "hypertension"), perc_GT*100, perc_GT),
+         TT = ifelse(type %in% c("allnbns", "bc", "cvd", "hypertension"), perc_TT*100, perc_TT),
+         `Chi-Square p-value` = chi_sq_p,
+         `M.o.A. (95% CI)` = paste0(format(round(HR, 2),nsmall = 2), " (", 
+                           format(round(CI.l,2),nsmall = 2), ", ",
+                           format(round(CI.u,2),nsmall = 2), ")"),
+         `M.o.A. p-value` = format(round(p.val,2),nsmall = 2)) %>%
+  mutate(`M.o.A. p-value` = case_when(`M.o.A. p-value` < 0.001 ~ "0.000",
+                               TRUE ~ `M.o.A. p-value`)) %>%
+  select("Outcome (b) (n = total cases/readings)" = Outcome, GG, GT, TT, `Chi-Square p-value`, `M.o.A. (95% CI)`, `M.o.A. p-value`) %>%
+  kable(caption = "Association of IGF1R SNP rs2016347 Genotype with Study Outcomes\\textsuperscript{a}",
+        booktabs = T,
+        digits = 2,
+       format = "latex",
+        align = "lrrrrrr",
+        linesep = "", 
+       escape = T) %>%
+  add_header_above(header = c(" " = 1, 
+                              "rs2016347 Genotype\\\\textsuperscript{c}" = 3, 
+                              " " = 3),
+                   escape = FALSE) %>% 
+  kable_styling(latex_options = "scale_down",
+                font_size = 11) %>%
+  footnote(alphabet = c("CVD = cardiovascular disease; G = guanine; HTN = hypertension; IGF1R = insulin-like growth factor 1 receptor; MoA = measures of assocation; SNP = single-nucleotide polymorphism; T = thymine",
+                        "All nonbreast cancer cases include all cancers except breast and nonmelanoma skin cancers, breast cancer cases include only invasive cancers; hospital cardiovascular diagnosis (CVD) and hospital HTN diagnosis cases are based on inpatient International Classification of Diseases, Tenth Revision diagnostic codes. Systolic and diastolic blood pressures are mean values in millimeters of mercury on study entry.",
+                        "For nonbreast cancers, breast cancer, CVD, and HTN, values represent percent of each genotype with outcome; for systolic and diastolic blood pressures, values are mean pressures for each genotype.",
+                        "P values are for chi-squared independence between genotype and outcome.",
+                        "MoA are for recessive genetic model with P values for hazard ratios for nonbreast and breast cancers, odds ratios for hospital CVD and HTN, and differences in mean blood pressures for systolic and diastolic blood pressures."),
+           threeparttable = T)
+
+@
+
+<<eval = FALSE, echo = FALSE>>=
+mods <- list(allnbns = mods,
+             bc = mods_bc,
+             cvd = m6,
+             htn = mod_htn,
+             dbp = m_dbp,
+             sbp = m_sbp)
+save(mods, file = here("data", "2019-10-07_interaction-mods.RData"))
+@
+
+
+
+
+
+\end{document}
