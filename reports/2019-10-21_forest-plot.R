@@ -120,8 +120,4 @@ grid.arrange(arrangeGrob(data_table,
                          widths = unit(c(18,12), "cm"),
                          respect = FALSE))
 
-lab <- data.frame(V0 = factor(c("A","B","C","D","E","F","G","A","B","C","D","E","F","G","A","B","C","D","E","F","G","A","B","C","D","E","F","G"),, levels=c("G","F","E","D","C","B","A")),
-                  V05 = rep(c(1,2,3,4),each=7),
-                  V1 = c("Occuption","Active","","Inactive","","Inactive","","Recreation","Inactive","","Active","","Inactive","","Gender","Men","Women","Men","Women","Men","Women","OR",3.1,2.0,1.6,3.2,3.6,7.6)
-)
 
